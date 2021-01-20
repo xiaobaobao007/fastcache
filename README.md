@@ -24,7 +24,6 @@
         return cache;
     }
 ```
-
 * 传统一对多的读缓存实现,代码更加臃肿，为了服务一个po不仅需要一个dao层，还需要DBListCacheObject类的管理。
 ```
     //得到单个对象
@@ -58,7 +57,7 @@
     }
 ```
 
-* spring cache 中list
+### spring cache 中list
 ```
     对list中单个元素的修改是通过直接删除整个list，来保证缓存一致性。
 ```
