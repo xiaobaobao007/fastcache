@@ -1,13 +1,12 @@
 import java.awt.*;
-import java.util.Set;
 
 import javax.swing.*;
 
-import com.intion.fastcache.annotation.Cache;
-import com.intion.fastcache.dao.ListDemoDao;
-import com.intion.fastcache.factory.CglibProxyFactory;
-
-import org.reflections.Reflections;
+import dao.ItemDao;
+import dao.PeopleDao;
+import domain.Item;
+import domain.People;
+import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
 public class ATestService {
 
@@ -22,7 +21,7 @@ public class ATestService {
 	public static JTextField startText;
 	public static JTextField endText;
 
-	public static int JFRAME_WIDTH = 1220;
+	public static int JFRAME_WIDTH = 400;
 	public static int JFRAME_HEIGHT = 650;
 
 	public void init() {
@@ -138,42 +137,67 @@ public class ATestService {
 		jPanel.add(jLabel10);
 		jPanel.add(endText);
 
+		/*
+		 * list的测试开始
+		 */
 		JButton button = new JButton("getList");
 		button.addActionListener((q) -> {
-			System.out.println(ListDemoDao.dao.getList((int) getUserId()));
+			System.out.println(ItemDao.dao.getList(getUserId()));
 		});
 
 		JButton button1 = new JButton("getOne");
 		button1.addActionListener((q) -> {
-			System.out.println(ListDemoDao.dao.getOne((int) getUserId(), (int) getId()));
+			System.out.println(ItemDao.dao.getOne(getUserId(), getId()));
 		});
 
-		JButton button2 = new JButton("");
+		JButton button2 = new JButton("updateOne");
 		button2.addActionListener((q) -> {
+			Item item = ItemDao.dao.getOne(getUserId(), getId());
+			if (item != null) {
+				item.setNum(item.getNum() + 1);
+				ItemDao.dao.update(item);
+			}
 		});
 
-		JButton button3 = new JButton("");
+		JButton button3 = new JButton("deleteOne");
 		button3.addActionListener((q) -> {
+			Item item = ItemDao.dao.getOne(getUserId(), getId());
+			ItemDao.dao.delete(item);
 		});
 
-		JButton button4 = new JButton("");
+		JButton button4 = new JButton("addOne");
 		button4.addActionListener((q) -> {
+			Item item = new Item(getUserId(), getId());
+			ItemDao.dao.add(item);
 		});
 
-		JButton button5 = new JButton("");
+		/*
+		 one的测试开始
+		 */
+		JButton button5 = new JButton("getOne");
 		button5.addActionListener((q) -> {
+			System.out.println(PeopleDao.dao.get(getUserId()));
 		});
 
-		JButton button6 = new JButton("");
+		JButton button6 = new JButton("updateOne");
 		button6.addActionListener((q) -> {
+			People people = PeopleDao.dao.get(getUserId());
+			if (people != null) {
+				people.setAge(people.getAge() + 1);
+				PeopleDao.dao.update(people);
+			}
 		});
 
-		JButton button7 = new JButton("");
+		JButton button7 = new JButton("deleteOne");
 		button7.addActionListener((q) -> {
+			People people = PeopleDao.dao.get(getUserId());
+			PeopleDao.dao.delete(people);
 		});
 
-		JButton button8 = new JButton("");
+		JButton button8 = new JButton("addOne");
 		button8.addActionListener((q) -> {
+			People people = new People(getUserId());
+			PeopleDao.dao.add(people);
 		});
 
 		JButton button9 = new JButton("");
@@ -226,20 +250,6 @@ public class ATestService {
 			button9.setBounds(220, 540, 145, 50);
 			jPanel.add(button9);
 
-			button_0.setBounds(1000, 300, 145, 50);
-			jPanel.add(button_0);
-			button_1.setBounds(1000, 360, 145, 50);
-			jPanel.add(button_1);
-			button_2.setBounds(1000, 420, 145, 50);
-			jPanel.add(button_2);
-			button_3.setBounds(1000, 480, 145, 50);
-			jPanel.add(button_3);
-			button_4.setBounds(1000, 540, 145, 50);
-			jPanel.add(button_4);
-			button_5.setBounds(830, 300, 145, 50);
-			button_5.setBackground(Color.yellow);
-			jPanel.add(button_5);
-
 			jFrame.add(jPanel);
 			jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			jFrame.setVisible(true);
@@ -247,10 +257,9 @@ public class ATestService {
 
 	}
 
-	public static void main(String[] args) throws ClassNotFoundException {
-		// new ATestService().init();
-
-		CglibProxyFactory.init("com.intion.fastcache.dao");
+	public static void main(String[] args) {
+		CglibProxyFactory.init("dao");
+		new ATestService().init();
 	}
 
 	public String getParam() {
@@ -261,8 +270,8 @@ public class ATestService {
 		return typeText.getText();
 	}
 
-	public long getUserId() {
-		return Long.parseLong(userIdText.getText());
+	public int getUserId() {
+		return Integer.parseInt(userIdText.getText());
 	}
 
 	public long getItemId() {
@@ -273,8 +282,8 @@ public class ATestService {
 		return Integer.parseInt(itemNumText.getText());
 	}
 
-	public long getId() {
-		return Long.parseLong(idText.getText());
+	public int getId() {
+		return Integer.parseInt(idText.getText());
 	}
 
 	public int getType() {

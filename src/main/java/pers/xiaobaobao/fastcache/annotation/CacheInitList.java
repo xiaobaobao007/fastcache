@@ -1,4 +1,4 @@
-package com.intion.fastcache.annotation;
+package pers.xiaobaobao.fastcache.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;

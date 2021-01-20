@@ -1,4 +1,4 @@
-package com.intion.fastcache.domian;
+package pers.xiaobaobao.fastcache.domian;
 
 /**
  * @author bao meng yang <932824098@qq.com>
@@ -7,6 +7,7 @@ package com.intion.fastcache.domian;
 public enum CacheOperationType {
 	NULL,
 	GET,
-	UPDATE_ADD,
-	DELETE;
+	UPDATE,
+	ADD,
+	DELETE
 }

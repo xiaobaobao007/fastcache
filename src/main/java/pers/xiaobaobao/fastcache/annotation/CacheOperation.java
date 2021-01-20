@@ -1,9 +1,9 @@
-package com.intion.fastcache.annotation;
+package pers.xiaobaobao.fastcache.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.intion.fastcache.domian.CacheOperationType;
+import pers.xiaobaobao.fastcache.domian.CacheOperationType;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -17,7 +17,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface CacheOperation {
 	boolean isListOperation() default false;
 
-	CacheOperationType operation() ;
+	CacheOperationType operation() default CacheOperationType.NULL;
 
 	int primaryKeyIndex() default 0;
 

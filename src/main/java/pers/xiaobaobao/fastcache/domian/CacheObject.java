@@ -1,4 +1,4 @@
-package com.intion.fastcache.domian;
+package pers.xiaobaobao.fastcache.domian;
 
 /**
  * @author bao meng yang <932824098@qq.com>

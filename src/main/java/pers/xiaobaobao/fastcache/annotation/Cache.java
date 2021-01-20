@@ -1,4 +1,4 @@
-package com.intion.fastcache.annotation;
+package pers.xiaobaobao.fastcache.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -14,6 +14,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({TYPE})
 public @interface Cache {
 	boolean isList() default false;
+
+	Class<?> classz();
 
 	String primaryKey();
 
