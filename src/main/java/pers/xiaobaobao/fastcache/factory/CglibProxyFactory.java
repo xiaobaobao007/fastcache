@@ -45,12 +45,13 @@ public class CglibProxyFactory implements MethodInterceptor {
 	 */
 	public static void init(String packageName) {
 		LOG.debug("开始扫描【{}】类缓存包", packageName);
+		int num = 0;
 		try {
-			ClassTools.loadClass(packageName, Cache.class);
+			num = ClassTools.loadClass(packageName, Cache.class);
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		LOG.info("【{}】类缓存包，加载成功", packageName);
+		LOG.info("【{}】类缓存包，成功加载{}个类", packageName, num);
 	}
 
 	@Override
@@ -111,13 +112,11 @@ public class CglibProxyFactory implements MethodInterceptor {
 			LOG.warn("【{}】缓存主键设置为空", daoClass.getName());
 			throw new CacheKeyException();
 		}
-		if (cache.isList() && "".equals(cache.secondaryKey())) {
-			LOG.warn("【{}】缓存副键设置为空", daoClass.getName());
-			throw new CacheKeyException();
-		}
+
+		boolean isListCache = !StringTools.isNull(cache.secondaryKey());
 
 		Field[] keyFields;
-		if (cache.isList()) {
+		if (isListCache) {
 			try {
 				keyFields = new Field[2];
 				keyFields[1] = cache.classz().getDeclaredField(cache.secondaryKey());
@@ -148,7 +147,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 				if (annotation != null) {
 					if (annotation instanceof CacheOperation) {
 						CacheOperation cacheOperation = (CacheOperation) annotation;
-						if (cacheOperation.isListOperation() && !cache.isList()) {
+						if (cacheOperation.isListOperation() && !isListCache) {
 							continue;
 						}
 
@@ -157,7 +156,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 							throw new CacheKeyException();
 						}
 						if (cacheOperation.operation() == CacheOperationType.GET) {
-							if (cache.isList() && !cacheOperation.isListOperation() && (cacheOperation.secondaryKeyIndex() < 0 || cacheOperation.secondaryKeyIndex() >= method.getParameterCount())) {
+							if (isListCache && !cacheOperation.isListOperation() && (cacheOperation.secondaryKeyIndex() < 0 || cacheOperation.secondaryKeyIndex() >= method.getParameterCount())) {
 								LOG.warn("【{}-{}】，方法副键index错误，提供【{}】，上限【{}】", cache.classz().getName(), method.getName(), cacheOperation.secondaryKeyIndex(), method.getParameterCount());
 								throw new CacheKeyException();
 							}
@@ -186,7 +185,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 			proxyClassMap.put(hashCode(t), new ProxyClass(daoClass, initMethod, keyFields, operationMap));
 		}
 
-		return t;
+		return null;
 	}
 
 	//因为hashcode方法被代理，会栈溢出

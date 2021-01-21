@@ -15,7 +15,7 @@ import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/16，17:41
  */
-@Cache(isList = true, classz = Item.class, primaryKey = "uid", secondaryKey = "id")
+@Cache(location = "",primaryKey = "uid", secondaryKey = "id")
 public class ItemDao implements CacheObject {
 
 	public static ItemDao dao = CglibProxyFactory.getProxy(ItemDao.class);

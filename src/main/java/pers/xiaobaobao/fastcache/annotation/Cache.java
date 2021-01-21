@@ -15,9 +15,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Target({TYPE})
 public @interface Cache {
-	boolean isList() default false;
-
-	Class<?> classz();
+	String location();
 
 	String primaryKey();
 

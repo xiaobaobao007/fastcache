@@ -1,6 +1,4 @@
-import java.lang.annotation.Inherited;
-
-import com.sun.istack.internal.Interned;
+package test;
 
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheInitList;
@@ -10,8 +8,8 @@ import pers.xiaobaobao.fastcache.annotation.CacheInitList;
  * @date 2021/1/20，21:24
  */
 
-@Cache(classz = aaa.class, primaryKey = "")
-public abstract class aaa {
+@Cache(location = "abstract", primaryKey = "")
+public abstract class Abstract {
 
 	@CacheInitList
 	public final void bmy() {

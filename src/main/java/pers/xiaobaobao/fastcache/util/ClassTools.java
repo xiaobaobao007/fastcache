@@ -14,11 +14,16 @@ import java.util.Enumeration;
  */
 public class ClassTools {
 
+	private static
+
+	public static void
+
 	/**
 	 * @param packageName 需要被加载的包名
 	 * @param annotation  只有指定被注解的才能被加载
 	 */
-	public static void loadClass(String packageName, Class<? extends Annotation> annotation) throws IOException, ClassNotFoundException {
+	public static int loadClass(String packageName, Class<? extends Annotation> annotation) throws IOException, ClassNotFoundException {
+		int num = 0;
 		Enumeration<URL> dirs;
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		dirs = classLoader.getResources(packageName.replace('.', '/'));
@@ -33,6 +38,7 @@ public class ClassTools {
 						for (File file : defiles) {
 							String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
 							if (classLoader.loadClass(className).getAnnotation(annotation) != null) {
+								num++;
 								Class.forName(className, true, classLoader);
 							}
 						}
@@ -40,6 +46,7 @@ public class ClassTools {
 				}
 			}
 		}
+		return num;
 	}
 
 }

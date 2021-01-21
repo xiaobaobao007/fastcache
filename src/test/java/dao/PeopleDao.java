@@ -1,6 +1,5 @@
 package dao;
 
-import domain.Item;
 import domain.People;
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
@@ -14,7 +13,7 @@ import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/16，17:41
  */
-@Cache(classz = People.class, primaryKey = "userId")
+@Cache(location = "", primaryKey = "userId")
 public class PeopleDao implements CacheObject {
 
 	public static PeopleDao dao = CglibProxyFactory.getProxy(PeopleDao.class);
