@@ -6,8 +6,6 @@ import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.util.Enumeration;
 
-import pers.xiaobaobao.fastcache.annotation.Cache;
-
 /**
  * 通过包名获取class
  *

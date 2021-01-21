@@ -1,79 +1,90 @@
 package pers.xiaobaobao.fastcache.factory;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.cglib.proxy.MethodProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
 import pers.xiaobaobao.fastcache.domian.CacheObject;
+import pers.xiaobaobao.fastcache.domian.ProxyClass;
 
 /**
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/19，11:27
  */
 public class CacheFactory {
-	//缓存对象
-	private static final Map<String, Map<String, Map<String, CacheObject>>> classCacheMap = new ConcurrentHashMap<>();//<class,<pKey,<sKey,cache>>>
-	private static final Map<String, Map<String, List<CacheObject>>> classListCacheMap = new ConcurrentHashMap<>();//<class,<pKey,cacheList>>
+
+	private static final Logger LOG = LoggerFactory.getLogger(CacheFactory.class);
+
+	//一对一缓存对象
+	private static final Map<String, Map<String, CacheObject>> classOneCacheMap = new ConcurrentHashMap<>();//<class,<pKey,cache>>
+	//一对多缓存对象
+	private static final Map<String, Map<String, Map<String, CacheObject>>> classMoreCacheMap = new ConcurrentHashMap<>();//<class,<pKey,<sKey,cache>>>
+	private static final Map<String, Map<String, Queue<CacheObject>>> classListCacheMap = new ConcurrentHashMap<>();//<class,<pKey,cacheList>>
 
 	//空对象
 	private static final CacheObject NULL_CACHE_OBJECT = new CacheObject() {
 	};
-	private static final List<CacheObject> NULL_CACHE_LIST_OBJECT = new ArrayList<>();
 
 	protected Object getObject(Object o,
-							   Method method,
-							   Object[] objects,
-							   MethodProxy methodProxy,
-							   CglibProxyFactory.ProxyClass proxyClass,
-							   String hashCode,
-							   CacheOperation cacheOperation) throws Throwable {
+	                           Method method,
+	                           Object[] objects,
+	                           MethodProxy methodProxy,
+	                           ProxyClass proxyClass,
+	                           String hashCode,
+	                           CacheOperation cacheOperation) throws Throwable {
 
+		String pKey = "" + objects[cacheOperation.primaryKeyIndex()];
 		if (proxyClass.isListClass()) {
-			Map<String, List<CacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
+			Map<String, Queue<CacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
 
-			String key = "" + objects[cacheOperation.primaryKeyIndex()];
-			List<CacheObject> listCache = pKeyListCacheMap.get(key);
+			Queue<CacheObject> listCache = pKeyListCacheMap.get(pKey);
 
 			if (listCache == null) {
 				boolean skip = false;
 				if (proxyClass.initMethod.getName().equals(method.getName())) {
-					proxyClass.methodProxy = methodProxy;
-					System.out.println("未命中缓存-initMethod");
-					//noinspection unchecked
-					listCache = (List<CacheObject>) methodProxy.invokeSuper(o, objects);
-				} else {
-					if (proxyClass.methodProxy != null) {
-						System.out.println("未命中缓存-methodProxy");
-						//noinspection unchecked
-						listCache = (List<CacheObject>) proxyClass.methodProxy.invokeSuper(o, objects);
+					LOG.debug("【{}-{}】未命中LIST缓存,类未缓存initMethod", proxyClass.beProxyClass.getSimpleName(), pKey);
+					proxyClass.setMethodProxy(methodProxy);
+					Object invokeResult = methodProxy.invokeSuper(o, objects);
+					if (invokeResult == null) {
+						listCache = new LinkedList<>();
 					} else {
-						System.out.println("未命中缓存-invoke");
 						//noinspection unchecked
-						listCache = (List<CacheObject>) proxyClass.initMethod.invoke(o, objects[0]);
+						listCache = new LinkedList<>((Collection<CacheObject>) invokeResult);
+					}
+				} else {
+					if (proxyClass.getMethodProxy() != null) {
+						LOG.debug("【{}-{}】未命中LIST缓存,执行类initMethod", proxyClass.beProxyClass.getSimpleName(), pKey);
+						Object invokeResult = proxyClass.getMethodProxy().invokeSuper(o, objects);
+						if (invokeResult == null) {
+							listCache = new LinkedList<>();
+						} else {
+							//noinspection unchecked
+							listCache = new LinkedList<>((Collection<CacheObject>) invokeResult);
+						}
+					} else {
+						LOG.debug("【{}-{}】未命中类INIT LIST缓存", proxyClass.beProxyClass.getSimpleName(), pKey);
+						//noinspection unchecked
+						listCache = (Queue<CacheObject>) proxyClass.initMethod.invoke(o, objects[0]);
 						skip = true;
 					}
 				}
 
 				if (!skip) {
-					if (listCache == null) {
-						listCache = NULL_CACHE_LIST_OBJECT;
-					} else {
-						Map<String, CacheObject> sKeyCacheMap = classCacheMap
-																		.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
-																		.computeIfAbsent("" + objects[cacheOperation.primaryKeyIndex()], k -> new ConcurrentHashMap<>());
-						for (CacheObject object : listCache) {
-							sKeyCacheMap.put(getParamsKey(proxyClass.getPrimaryKeyValue(object), proxyClass.getSecondaryKeyValue(object)), object);
-						}
+					Map<String, CacheObject> sKeyCacheMap = classMoreCacheMap
+							                                        .computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
+							                                        .computeIfAbsent(pKey, k -> new ConcurrentHashMap<>());
+					for (CacheObject object : listCache) {
+						sKeyCacheMap.put(getParamsKey(proxyClass.getPrimaryKeyValue(object), proxyClass.getSecondaryKeyValue(object)), object);
 					}
-					pKeyListCacheMap.put(key, listCache);
+					pKeyListCacheMap.put(pKey, listCache);
 				}
-			} else if (listCache == NULL_CACHE_LIST_OBJECT) {
-				return null;
 			}
 
 			if (cacheOperation.isListOperation()) {
@@ -83,16 +94,25 @@ public class CacheFactory {
 		}
 
 		//获得单个
-		Map<String, CacheObject> sKeyCacheMap = classCacheMap
-														.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
-														.computeIfAbsent("" + objects[cacheOperation.primaryKeyIndex()], k -> new ConcurrentHashMap<>());
-		String sKey = proxyClass.isListClass() ? "" + objects[cacheOperation.secondaryKeyIndex()] : "";
-		CacheObject cacheObject = sKeyCacheMap.get(sKey);
+		Map<String, CacheObject> oneCacheMap;
+		String key;
+
+		if (proxyClass.isListClass()) {
+			oneCacheMap = classMoreCacheMap
+					              .computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
+					              .computeIfAbsent(pKey, k -> new ConcurrentHashMap<>());
+			key = "" + objects[cacheOperation.secondaryKeyIndex()];
+		} else {
+			oneCacheMap = classOneCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
+			key = pKey;
+		}
+
+		CacheObject cacheObject = oneCacheMap.get(key);
 		if (!proxyClass.isListClass()) {
 			if (cacheObject == null) {
-				System.out.println("未命中单个缓存");
+				LOG.debug("【{}-{}】未命中缓存", proxyClass.beProxyClass.getSimpleName(), key);
 				cacheObject = (CacheObject) methodProxy.invokeSuper(o, objects);
-				sKeyCacheMap.put(sKey, cacheObject == null ? NULL_CACHE_OBJECT : cacheObject);
+				oneCacheMap.put(key, cacheObject == null ? NULL_CACHE_OBJECT : cacheObject);
 			} else if (cacheObject == NULL_CACHE_OBJECT) {
 				return null;
 			}
@@ -101,62 +121,57 @@ public class CacheFactory {
 	}
 
 	protected void update(CacheObject cacheObject,
-						  String hashCode,
-						  String pkey,
-						  boolean isListClass,
-						  Field[] fields) throws IllegalAccessException {
+	                      String hashCode,
+	                      String pKey,
+	                      ProxyClass proxyClass,
+	                      boolean isPutNotRemove) throws IllegalAccessException {
 
-		Map<String, CacheObject> sKeyCacheMap = classCacheMap
-														.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
-														.computeIfAbsent(pkey, k -> new ConcurrentHashMap<>());
-
-		String sKey = isListClass ? "" + fields[1].get(cacheObject) : "";
-		sKeyCacheMap.put(sKey, cacheObject);
+		Map<String, CacheObject> oneCacheMap;
+		String key;
+		if (proxyClass.isListClass()) {
+			oneCacheMap = classMoreCacheMap
+					              .computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
+					              .computeIfAbsent(pKey, k -> new ConcurrentHashMap<>());
+			key = proxyClass.getSecondaryKeyValue(cacheObject);
+		} else {
+			oneCacheMap = classOneCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
+			key = pKey;
+		}
+		if (isPutNotRemove) {
+			oneCacheMap.put(key, cacheObject);
+		} else {
+			oneCacheMap.remove(key);
+		}
 	}
 
 	protected void add(CacheObject cacheObject,
-					   String hashCode,
-					   String pkey,
-					   boolean isListClass,
-					   Field[] fields) throws IllegalAccessException {
+	                   String hashCode,
+	                   String pKey,
+	                   ProxyClass proxyClass) throws IllegalAccessException {
 
-		update(cacheObject, hashCode, pkey, isListClass, fields);
+		update(cacheObject, hashCode, pKey, proxyClass, true);
 
-		if (isListClass) {
-			Map<String, List<CacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
-			List<CacheObject> cacheObjectList = pKeyListCacheMap.get(pkey);
-
-			if (cacheObjectList == null || cacheObjectList == NULL_CACHE_LIST_OBJECT) {
-				cacheObjectList = new ArrayList<>();
-				pKeyListCacheMap.put(pkey, cacheObjectList);
-			}
-			cacheObjectList.add(cacheObject);
+		if (proxyClass.isListClass()) {
+			classListCacheMap
+					.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
+					.computeIfAbsent(pKey, k -> new LinkedList<>())
+					.add(cacheObject);
 		}
 	}
 
 	protected void delete(CacheObject cacheObject,
-						  String hashCode,
-						  String pkey,
-						  boolean isListClass,
-						  Field[] fields) throws IllegalAccessException {
-		Map<String, CacheObject> sKeyCacheMap = classCacheMap
-														.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
-														.computeIfAbsent(pkey, k -> new ConcurrentHashMap<>());
+	                      String hashCode,
+	                      String pKey,
+	                      ProxyClass proxyClass) throws IllegalAccessException {
 
-		String sKey = isListClass ? "" + fields[1].get(cacheObject) : "";
-		sKeyCacheMap.remove(sKey);
+		update(cacheObject, hashCode, pKey, proxyClass, false);
 
-		if (isListClass) {
-			Map<String, List<CacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
-			List<CacheObject> cacheObjectList = pKeyListCacheMap.get(pkey);
+		if (proxyClass.isListClass()) {
+			Map<String, Queue<CacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
+			Queue<CacheObject> cacheObjectQueue = pKeyListCacheMap.get(pKey);
 
-			if (cacheObjectList != null && cacheObjectList != NULL_CACHE_LIST_OBJECT) {
-				for (int i = cacheObjectList.size() - 1; i >= 0; i--) {
-					if (cacheObjectList.get(i) == cacheObject) {
-						cacheObjectList.remove(i);
-						break;
-					}
-				}
+			if (cacheObjectQueue != null) {
+				cacheObjectQueue.remove(cacheObject);
 			}
 		}
 	}

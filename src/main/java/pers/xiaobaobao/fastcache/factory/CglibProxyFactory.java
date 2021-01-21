@@ -11,13 +11,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheInitList;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
 import pers.xiaobaobao.fastcache.domian.CacheObject;
 import pers.xiaobaobao.fastcache.domian.CacheOperationType;
+import pers.xiaobaobao.fastcache.domian.ProxyClass;
 import pers.xiaobaobao.fastcache.exception.CacheKeyException;
 import pers.xiaobaobao.fastcache.util.ClassTools;
+import pers.xiaobaobao.fastcache.util.StringTools;
 
 /**
  * @author bao meng yang <932824098@qq.com>
@@ -27,6 +31,8 @@ import pers.xiaobaobao.fastcache.util.ClassTools;
  */
 
 public class CglibProxyFactory implements MethodInterceptor {
+
+	private static final Logger LOG = LoggerFactory.getLogger(CglibProxyFactory.class);
 
 	private static final CglibProxyFactory cglibProxy = new CglibProxyFactory();
 	private static final CacheFactory cacheFactory = new CacheFactory();
@@ -38,11 +44,13 @@ public class CglibProxyFactory implements MethodInterceptor {
 	 * 强烈建议对dao层所有包进行初始化加载
 	 */
 	public static void init(String packageName) {
+		LOG.debug("开始扫描【{}】类缓存包", packageName);
 		try {
 			ClassTools.loadClass(packageName, Cache.class);
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+		LOG.info("【{}】类缓存包，加载成功", packageName);
 	}
 
 	@Override
@@ -61,7 +69,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 							return null;
 						}
 						CacheObject cacheObject = (CacheObject) objects[cacheOperation.primaryKeyIndex()];
-						cacheFactory.update(cacheObject, hashCode, "" + proxyClass.keyFields[cacheOperation.primaryKeyIndex()].get(cacheObject), proxyClass.isListClass(), proxyClass.keyFields);
+						cacheFactory.update(cacheObject, hashCode, proxyClass.getPrimaryKeyValue(cacheObject), proxyClass, true);
 						break;
 					}
 					case ADD: {
@@ -69,7 +77,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 							return null;
 						}
 						CacheObject cacheObject = (CacheObject) objects[cacheOperation.primaryKeyIndex()];
-						cacheFactory.add(cacheObject, hashCode, "" + proxyClass.keyFields[cacheOperation.primaryKeyIndex()].get(cacheObject), proxyClass.isListClass(), proxyClass.keyFields);
+						cacheFactory.add(cacheObject, hashCode, proxyClass.getPrimaryKeyValue(cacheObject), proxyClass);
 						break;
 					}
 					case DELETE: {
@@ -77,7 +85,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 							return null;
 						}
 						CacheObject cacheObject = (CacheObject) objects[cacheOperation.primaryKeyIndex()];
-						cacheFactory.delete(cacheObject, hashCode, "" + proxyClass.keyFields[cacheOperation.primaryKeyIndex()].get(cacheObject), proxyClass.isListClass(), proxyClass.keyFields);
+						cacheFactory.delete(cacheObject, hashCode, proxyClass.getPrimaryKeyValue(cacheObject), proxyClass);
 						break;
 					}
 				}
@@ -87,7 +95,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 	}
 
 	public static <T> T getProxy(Class<T> daoClass) {
-		System.out.println("开始加载类:" + daoClass.getName());
+		LOG.debug("开始进行类缓存:【{}】", daoClass.getName());
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(daoClass);
 		enhancer.setCallback(cglibProxy);
@@ -99,11 +107,13 @@ public class CglibProxyFactory implements MethodInterceptor {
 		} else {
 			cache.classz();
 		}
-		if ("".equals(cache.primaryKey())) {
-			throw new CacheKeyException("缓存主键未设置", daoClass);
+		if (StringTools.isNull(cache.primaryKey())) {
+			LOG.warn("【{}】缓存主键设置为空", daoClass.getName());
+			throw new CacheKeyException();
 		}
 		if (cache.isList() && "".equals(cache.secondaryKey())) {
-			throw new CacheKeyException("缓存副键未设置", daoClass);
+			LOG.warn("【{}】缓存副键设置为空", daoClass.getName());
+			throw new CacheKeyException();
 		}
 
 		Field[] keyFields;
@@ -113,7 +123,8 @@ public class CglibProxyFactory implements MethodInterceptor {
 				keyFields[1] = cache.classz().getDeclaredField(cache.secondaryKey());
 				keyFields[1].setAccessible(true);
 			} catch (NoSuchFieldException e) {
-				throw new CacheKeyException("缓存副键不存在", cache.classz());
+				LOG.warn("【{}】缓存副键反射不到", cache.classz().getName());
+				throw new CacheKeyException();
 			}
 		} else {
 			keyFields = new Field[1];
@@ -122,7 +133,8 @@ public class CglibProxyFactory implements MethodInterceptor {
 			keyFields[0] = cache.classz().getDeclaredField(cache.primaryKey());
 			keyFields[0].setAccessible(true);
 		} catch (NoSuchFieldException e) {
-			throw new CacheKeyException("缓存主键不存在", cache.classz());
+			LOG.warn("【{}】缓存主键反射不到", cache.classz().getName());
+			throw new CacheKeyException();
 		}
 
 		Method initMethod = null;
@@ -140,22 +152,22 @@ public class CglibProxyFactory implements MethodInterceptor {
 							continue;
 						}
 
+						if (cacheOperation.primaryKeyIndex() < 0 || cacheOperation.primaryKeyIndex() >= method.getParameterCount()) {
+							LOG.warn("【{}-{}】，方法主键index错误，提供【{}】，上限【{}】", cache.classz().getName(), method.getName(), cacheOperation.primaryKeyIndex(), method.getParameterCount());
+							throw new CacheKeyException();
+						}
 						if (cacheOperation.operation() == CacheOperationType.GET) {
-							if (cacheOperation.primaryKeyIndex() < 0 || cacheOperation.primaryKeyIndex() >= method.getParameterCount()) {
-								throw new CacheKeyException("主键错误,提供:" + cacheOperation.primaryKeyIndex() + "共:" + method.getParameterCount(), cache.classz(), method);
-							}
 							if (cache.isList() && !cacheOperation.isListOperation() && (cacheOperation.secondaryKeyIndex() < 0 || cacheOperation.secondaryKeyIndex() >= method.getParameterCount())) {
-								throw new CacheKeyException("附件错误,提供:" + cacheOperation.secondaryKeyIndex() + "共:" + method.getParameterCount(), cache.classz(), method);
+								LOG.warn("【{}-{}】，方法副键index错误，提供【{}】，上限【{}】", cache.classz().getName(), method.getName(), cacheOperation.secondaryKeyIndex(), method.getParameterCount());
+								throw new CacheKeyException();
 							}
 						} else if (cacheOperation.operation() == CacheOperationType.ADD
-										   || cacheOperation.operation() == CacheOperationType.UPDATE
-										   || cacheOperation.operation() == CacheOperationType.DELETE) {
+								           || cacheOperation.operation() == CacheOperationType.UPDATE
+								           || cacheOperation.operation() == CacheOperationType.DELETE) {
 
-							if (method.getParameterCount() <= cacheOperation.primaryKeyIndex()) {
-								throw new CacheKeyException("主键错误,提供:" + cacheOperation.primaryKeyIndex() + "共:" + method.getParameterCount(), cache.classz(), method);
-							}
 							if (method.getParameterTypes()[cacheOperation.primaryKeyIndex()] != cache.classz()) {
-								throw new CacheKeyException("方法参数类型错误,提供:" + method.getParameterTypes()[cacheOperation.primaryKeyIndex()], cache.classz(), method);
+								LOG.warn("【{}-{}】，方法参数【{}】不匹配【{}】", cache.classz().getName(), method.getName(), method.getParameterTypes()[cacheOperation.primaryKeyIndex()], cache.classz());
+								throw new CacheKeyException();
 							}
 						}
 
@@ -171,7 +183,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 		}
 
 		if (operationMap != null) {
-			proxyClassMap.put(hashCode(t), new ProxyClass(initMethod, keyFields, operationMap));
+			proxyClassMap.put(hashCode(t), new ProxyClass(daoClass, initMethod, keyFields, operationMap));
 		}
 
 		return t;
@@ -180,34 +192,6 @@ public class CglibProxyFactory implements MethodInterceptor {
 	//因为hashcode方法被代理，会栈溢出
 	private static String hashCode(Object object) {
 		return ("" + System.identityHashCode(object)).intern();
-	}
-
-	protected static class ProxyClass {
-		protected final Method initMethod;
-		protected MethodProxy methodProxy;
-		protected final Field[] keyFields;
-		protected final Map<String, CacheOperation> operationMap;
-
-		public ProxyClass(Method initMethod, Field[] keyFields, Map<String, CacheOperation> operationMap) {
-			this.initMethod = initMethod;
-			this.keyFields = keyFields;
-			this.operationMap = operationMap;
-		}
-
-		public String getPrimaryKeyValue(Object object) throws IllegalAccessException {
-			return "" + keyFields[0].get(object);
-		}
-
-		public Object getSecondaryKeyValue(Object object) throws IllegalAccessException {
-			return keyFields[1].get(object);
-		}
-
-		/**
-		 * 应该用{@link Cache#isList()}进行判断，但是用keyFields.length刚好也能实现相同效果，还更简便
-		 */
-		public boolean isListClass() {
-			return keyFields.length == 2;
-		}
 	}
 
 }
