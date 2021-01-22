@@ -31,27 +31,38 @@ public class ClassTools {
 				URL url = dirs.nextElement();
 				String protocol = url.getProtocol();
 				if ("file".equals(protocol)) {
-					File dir = new File(url.getFile());
-					if (dir.exists()) {
-						if (!dir.isDirectory()) {
-							return null;
-						}
-						File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
-						if (defiles == null) {
-							return null;
-						}
-						for (File poFile : defiles) {
-							String poName = poFile.getName().substring(0, poFile.getName().length() - 6);
-							if (!poName.equals(daoToPoName)) {
-								continue;
-							}
-							String className = location + "." + poName;
-							try {
-								return Class.forName(className, true, classLoader);
-							} catch (ClassNotFoundException e1) {
-								e1.printStackTrace();
-							}
-						}
+					return getClassByDeepDir(new File(url.getFile()), daoToPoName, location, classLoader);
+				}
+			}
+		}
+		return null;
+	}
+
+	private static Class<?> getClassByDeepDir(File dir, String daoToPoName, String location, ClassLoader classLoader) {
+		if (dir.exists()) {
+			if (!dir.isDirectory()) {
+				return null;
+			}
+			File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
+			if (defiles == null) {
+				return null;
+			}
+			for (File file : defiles) {
+				if (file.isDirectory()) {
+					Class<?> classz = getClassByDeepDir(file, daoToPoName, location, classLoader);
+					if (classz != null) {
+						return classz;
+					}
+				} else {
+					String poName = file.getName().substring(0, file.getName().length() - 6);
+					if (!poName.equals(daoToPoName)) {
+						continue;
+					}
+					String className = location + "." + poName;
+					try {
+						return Class.forName(className, true, classLoader);
+					} catch (ClassNotFoundException e1) {
+						e1.printStackTrace();
 					}
 				}
 			}
