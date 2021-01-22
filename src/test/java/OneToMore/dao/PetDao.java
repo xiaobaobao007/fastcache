@@ -44,7 +44,7 @@ public class PetDao extends CacheBaseListDao<Pet, Integer, Integer> {
 	}
 
 	@Override
-	protected void addOne(Pet pet) {
+	protected void saveOne(Pet pet) {
 
 	}
 

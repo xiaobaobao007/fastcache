@@ -35,11 +35,11 @@ public abstract class FastCacheBaseListDao<T,P,S> implements FastCacheBaseCacheO
 	protected abstract void updateOne(T t);
 
 	@CacheOperation(operation = CacheOperationType.ADD)
-	public void add(T t) {
-		addOne(t);
+	public void save(T t) {
+		saveOne(t);
 	}
 
-	protected abstract void addOne(T t);
+	protected abstract void saveOne(T t);
 
 	@CacheOperation(operation = CacheOperationType.DELETE)
 	public void delete(T t) {

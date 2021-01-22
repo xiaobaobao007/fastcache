@@ -31,7 +31,7 @@ public class GirlFriendDao extends CacheBaseOneDao<GirlFriend, Integer> {
 	}
 
 	@Override
-	protected void addOne(GirlFriend girlFriend) {
+	protected void saveOne(GirlFriend girlFriend) {
 
 	}
 

@@ -93,7 +93,7 @@ public class OneToMoreTest {
 		JButton button4 = new JButton("addOne");
 		button4.addActionListener((q) -> {
 			Pet pet = new Pet(getUserId(), getId());
-			PetDao.dao.add(pet);
+			PetDao.dao.save(pet);
 		});
 
 		{
@@ -127,7 +127,7 @@ public class OneToMoreTest {
 			JButton button9 = new JButton("addOne");
 			button9.addActionListener((q) -> {
 				GirlFriend girlFriend = new GirlFriend(getUserId());
-				GirlFriendDao.dao.add(girlFriend);
+				GirlFriendDao.dao.save(girlFriend);
 			});
 
 			int x = 30;

@@ -3,6 +3,8 @@ package pers.xiaobaobao.fastcache.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.Enumeration;
 

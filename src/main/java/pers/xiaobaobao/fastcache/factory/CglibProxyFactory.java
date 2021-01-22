@@ -17,8 +17,6 @@ import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheInitList;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
-import pers.xiaobaobao.fastcache.base.FastCacheBaseListDao;
-import pers.xiaobaobao.fastcache.base.FastCacheBaseOneDao;
 import pers.xiaobaobao.fastcache.domian.CacheOperationType;
 import pers.xiaobaobao.fastcache.domian.ProxyClass;
 import pers.xiaobaobao.fastcache.exception.CacheKeyException;
@@ -70,6 +68,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 					}
 					case UPDATE: {
 						if (objects[cacheOperation.primaryKeyIndex()] == null) {
+							LOG.error("【{}-{}】，传入参数为空，取消执行", proxyClass.beProxyClass.getName(), method.getName());
 							return null;
 						}
 						FastCacheBaseCacheObject fastCacheBaseCacheObject = (FastCacheBaseCacheObject) objects[cacheOperation.primaryKeyIndex()];
@@ -78,6 +77,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 					}
 					case ADD: {
 						if (objects[cacheOperation.primaryKeyIndex()] == null) {
+							LOG.error("【{}-{}】，传入参数为空，取消执行", proxyClass.beProxyClass.getName(), method.getName());
 							return null;
 						}
 						FastCacheBaseCacheObject fastCacheBaseCacheObject = (FastCacheBaseCacheObject) objects[cacheOperation.primaryKeyIndex()];
@@ -86,6 +86,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 					}
 					case DELETE: {
 						if (objects[cacheOperation.primaryKeyIndex()] == null) {
+							LOG.error("【{}-{}】，传入参数为空，取消执行", proxyClass.beProxyClass.getName(), method.getName());
 							return null;
 						}
 						FastCacheBaseCacheObject fastCacheBaseCacheObject = (FastCacheBaseCacheObject) objects[cacheOperation.primaryKeyIndex()];
