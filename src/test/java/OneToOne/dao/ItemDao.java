@@ -1,13 +1,13 @@
-package dao;
+package OneToOne.dao;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import domain.Item;
+import OneToOne.domain.Item;
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheInitList;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
-import pers.xiaobaobao.fastcache.domian.CacheObject;
+import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 import pers.xiaobaobao.fastcache.domian.CacheOperationType;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
@@ -15,8 +15,8 @@ import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/16，17:41
  */
-@Cache(location = "",primaryKey = "uid", secondaryKey = "id")
-public class ItemDao implements CacheObject {
+@Cache(location = "OneToOne.domain.Item", primaryKey = "uid", secondaryKey = "id")
+public class ItemDao implements FastCacheBaseCacheObject {
 
 	public static ItemDao dao = CglibProxyFactory.getProxy(ItemDao.class);
 

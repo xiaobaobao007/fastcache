@@ -1,14 +1,16 @@
+package OneToOne;
+
 import java.awt.*;
 
 import javax.swing.*;
 
-import dao.ItemDao;
-import dao.PeopleDao;
-import domain.Item;
-import domain.People;
+import OneToOne.dao.ItemDao;
+import OneToOne.dao.PeopleDao;
+import OneToOne.domain.Item;
+import OneToOne.domain.People;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
-public class ATestService {
+public class OneToOneTest {
 
 	public static JTextField userIdText;
 	public static JTextField idText;
@@ -161,9 +163,9 @@ public class ATestService {
 
 	}
 
-	public static void main(String[] args) {
-		CglibProxyFactory.init("dao");
-		new ATestService().init();
+	public static void main(String[] args) throws Exception {
+		CglibProxyFactory.init("OneToOne.dao");
+		// new OneToOneTest().init();
 	}
 
 	public int getType() {

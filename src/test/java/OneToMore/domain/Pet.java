@@ -1,17 +1,17 @@
-package domain;
+package OneToMore.domain;
 
-import pers.xiaobaobao.fastcache.domian.CacheObject;
+import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 
 /**
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/20，15:53:57
  */
-public class Item implements CacheObject {
+public class Pet implements FastCacheBaseCacheObject {
 	private int uid;
 	private int id;
 	private int num;
 
-	public Item(int uid, int id) {
+	public Pet(int uid, int id) {
 		this.uid = uid;
 		this.id = id;
 	}

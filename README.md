@@ -62,5 +62,5 @@
     对list中单个元素的修改是通过直接删除整个list，来保证缓存一致性。
 ```
 
-[测试方法类](src/test/java/ATestService.java)
+[测试方法类](src/test/java/OneToOne.ATestService.java)
 

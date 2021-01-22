@@ -1,12 +1,12 @@
-package domain;
+package OneToOne.domain;
 
-import pers.xiaobaobao.fastcache.domian.CacheObject;
+import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 
 /**
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/20，15:50:50
  */
-public class People implements CacheObject {
+public class People implements FastCacheBaseCacheObject {
 
 	private int userId;
 	private int age;

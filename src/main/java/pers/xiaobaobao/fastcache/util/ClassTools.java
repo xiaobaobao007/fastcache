@@ -14,9 +14,50 @@ import java.util.Enumeration;
  */
 public class ClassTools {
 
-	private static
+	public static Class<?> getDaoToPo(String location, Class<?> daoClass) throws IOException {
+		String daoToPoName = daoClass.getSimpleName();
+		if (!StringTools.isNull(daoToPoName) && daoToPoName.length() > 3) {
+			daoToPoName = daoToPoName.substring(0, daoToPoName.length() - 3);
+		} else {
+			return null;
+		}
 
-	public static void
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			return classLoader.loadClass(location);
+		} catch (ClassNotFoundException e) {
+			Enumeration<URL> dirs = classLoader.getResources(location.replace('.', '/'));
+			while (dirs.hasMoreElements()) {
+				URL url = dirs.nextElement();
+				String protocol = url.getProtocol();
+				if ("file".equals(protocol)) {
+					File dir = new File(url.getFile());
+					if (dir.exists()) {
+						if (!dir.isDirectory()) {
+							return null;
+						}
+						File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
+						if (defiles == null) {
+							return null;
+						}
+						for (File poFile : defiles) {
+							String poName = poFile.getName().substring(0, poFile.getName().length() - 6);
+							if (!poName.equals(daoToPoName)) {
+								continue;
+							}
+							String className = location + "." + poName;
+							try {
+								return Class.forName(className, true, classLoader);
+							} catch (ClassNotFoundException e1) {
+								e1.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * @param packageName 需要被加载的包名
@@ -24,9 +65,8 @@ public class ClassTools {
 	 */
 	public static int loadClass(String packageName, Class<? extends Annotation> annotation) throws IOException, ClassNotFoundException {
 		int num = 0;
-		Enumeration<URL> dirs;
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		dirs = classLoader.getResources(packageName.replace('.', '/'));
+		Enumeration<URL> dirs = classLoader.getResources(packageName.replace('.', '/'));
 		while (dirs.hasMoreElements()) {
 			URL url = dirs.nextElement();
 			String protocol = url.getProtocol();
