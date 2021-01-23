@@ -3,8 +3,6 @@ package pers.xiaobaobao.fastcache.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.Enumeration;
 
@@ -83,20 +81,24 @@ public class ClassTools {
 		while (dirs.hasMoreElements()) {
 			URL url = dirs.nextElement();
 			String protocol = url.getProtocol();
-			if ("file".equals(protocol)) {
-				File dir = new File(url.getFile());
-				if (dir.exists() && dir.isDirectory()) {
-					File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
-					if (defiles != null) {
-						for (File file : defiles) {
-							String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-							if (classLoader.loadClass(className).getAnnotation(annotation) != null) {
-								num++;
-								Class.forName(className, true, classLoader);
-							}
-						}
-					}
+			if (!"file".equals(protocol)) {
+				continue;
+			}
+			File dir = new File(url.getFile());
+			if (!dir.exists() || !dir.isDirectory()) {
+				continue;
+			}
+			File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
+			if (defiles == null) {
+				continue;
+			}
+			for (File file : defiles) {
+				String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
+				if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
+					continue;
 				}
+				num++;
+				Class.forName(className, true, classLoader);
 			}
 		}
 		return num;
