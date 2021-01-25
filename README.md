@@ -163,7 +163,7 @@ public class PetDao extends CacheBaseListDao<Pet, Integer, Integer> {
 问题1：因为FastCache没有被spring代理，没办法在FastCache任意一层取得被自动注入的对象。
 
 解决：
-```
+```java
 @Service
 public class GameService extends BaseService {
     @Autowired
