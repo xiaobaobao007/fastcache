@@ -150,6 +150,13 @@ public class PetDao extends CacheBaseListDao<Pet, Integer, Integer> {
 ```
 [测试方法类](src/test/java/fastcache2/Test2.java) 是个窗口化工具，很方便测试
 ---
+###使用注意点
+* 先对dao层进行初始化扫描（建议，同时也是进行类的检查，也可以先测试加载全部，避免运行中出现错误），CglibProxyFactory.init(String packageName)
+* 初始化dao层中会进行检查，错误会有详细提醒
+* 建议使用2.0版本，只需要注意主副键的名称一样
+* Cache中的主副键要对应po类的属性名字
+---
+
 ###关于整合spring
 我现在实际项目也是spring架构，orm也是spring的架构。我把遇到的问题，罗列下：
 ---
