@@ -35,7 +35,7 @@ public abstract class FastCacheBaseListDao<T, P, S> implements FastCacheBaseCach
 	/**
 	 * 自定义实现list数据库读取
 	 */
-	protected abstract List<T> getListByPKeys(P uid);
+	protected abstract List<T> getListByPKeys(P p);
 
 	@CacheOperation(operation = CacheOperationType.GET)
 	public T getOne(P p, S s) {

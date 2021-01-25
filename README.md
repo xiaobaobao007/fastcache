@@ -155,6 +155,26 @@ public class PetDao extends CacheBaseListDao<Pet, Integer, Integer> {
 * 初始化dao层中会进行检查，错误会有详细提醒
 * 建议使用2.0版本，只需要注意主副键的名称一样
 * Cache中的主副键要对应po类的属性名字
+* 2.0版本下dao层实现的方法和实际在业务层调取的方法并不一样，对应如下
+
+    一对一如下
+    
+    |  dao层方法  |   业务层调取方法   |
+    |  ----  |  ----  |
+    |  getOneByPKey   |   get   |
+    |  updateOne   |   update   |
+    |  saveOne   |   save   |
+    |  deleteOne   |   delete   |
+    
+    一对多如下
+    
+    |  dao层方法  |   业务层调取方法   |
+    |  ----  |  ----  |
+    |  getListByPKeys   |   getList   |
+    |  getOneByPSKeys   |   getOne   |
+    |  updateOne   |   update   |
+    |  saveOne   |   save   |
+    |  deleteOne   |   delete   |
 ---
 
 ### 关于整合spring
