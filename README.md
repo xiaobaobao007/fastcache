@@ -194,7 +194,6 @@ public class GameService extends BaseService {
     @PostConstruct
     public void init() {
         gameService = this;
-        CglibProxyFactory.init("com.intion.app.dao");
     }
 
     //获得被自动注入的对象，如果获取的对象多的话，建议设计类进行管理
