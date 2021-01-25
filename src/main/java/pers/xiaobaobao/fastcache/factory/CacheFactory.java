@@ -15,7 +15,10 @@ import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 import pers.xiaobaobao.fastcache.domian.ProxyClass;
 
 /**
+ * 缓存操作工厂
+ *
  * @author bao meng yang <932824098@qq.com>
+ * @version 2.0
  * @date 2021/1/19，11:27
  */
 public class CacheFactory {
@@ -32,6 +35,9 @@ public class CacheFactory {
 	private static final FastCacheBaseCacheObject NULL_CACHE_OBJECT = new FastCacheBaseCacheObject() {
 	};
 
+	/**
+	 * 取
+	 */
 	protected Object getObject(Object o,
 	                           Method method,
 	                           Object[] objects,
@@ -120,6 +126,9 @@ public class CacheFactory {
 		return fastCacheBaseCacheObject;
 	}
 
+	/**
+	 * 更新
+	 */
 	protected void update(FastCacheBaseCacheObject fastCacheBaseCacheObject,
 	                      String hashCode,
 	                      String pKey,
@@ -144,6 +153,9 @@ public class CacheFactory {
 		}
 	}
 
+	/**
+	 * 增加
+	 */
 	protected void add(FastCacheBaseCacheObject fastCacheBaseCacheObject,
 	                   String hashCode,
 	                   String pKey,
@@ -159,6 +171,9 @@ public class CacheFactory {
 		}
 	}
 
+	/**
+	 * 删除
+	 */
 	protected void delete(FastCacheBaseCacheObject fastCacheBaseCacheObject,
 	                      String hashCode,
 	                      String pKey,
@@ -176,7 +191,4 @@ public class CacheFactory {
 		}
 	}
 
-	private static String getParamsKey(Object key1, Object key2) {
-		return key1 + "_" + key2;
-	}
 }

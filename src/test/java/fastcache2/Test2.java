@@ -1,16 +1,16 @@
-package OneToOne;
+package fastcache2;
 
 import java.awt.*;
 
 import javax.swing.*;
 
-import OneToOne.dao.ItemDao;
-import OneToOne.dao.PeopleDao;
-import OneToOne.domain.Item;
-import OneToOne.domain.People;
+import fastcache2.domain.file1.GirlFriend;
+import fastcache2.dao.GirlFriendDao;
+import fastcache2.dao.PetDao;
+import fastcache2.domain.file2.Pet;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
-public class OneToOneTest {
+public class Test2 {
 
 	public static JTextField userIdText;
 	public static JTextField idText;
@@ -67,33 +67,33 @@ public class OneToOneTest {
 		 */
 		JButton button = new JButton("getList");
 		button.addActionListener((q) -> {
-			System.out.println(ItemDao.dao.getList(getUserId()));
+			System.out.println(PetDao.dao.getList(getUserId()));
 		});
 
 		JButton button1 = new JButton("getOne");
 		button1.addActionListener((q) -> {
-			System.out.println(ItemDao.dao.getOne(getUserId(), getId()));
+			System.out.println(PetDao.dao.getOne(getUserId(), getId()));
 		});
 
 		JButton button2 = new JButton("updateOne");
 		button2.addActionListener((q) -> {
-			Item item = ItemDao.dao.getOne(getUserId(), getId());
-			if (item != null) {
-				item.setNum(item.getNum() + 1);
-				ItemDao.dao.update(item);
+			Pet pet = PetDao.dao.getOne(getUserId(), getId());
+			if (pet != null) {
+				pet.setNum(pet.getNum() + 1);
+				PetDao.dao.update(pet);
 			}
 		});
 
 		JButton button3 = new JButton("deleteOne");
 		button3.addActionListener((q) -> {
-			Item item = ItemDao.dao.getOne(getUserId(), getId());
-			ItemDao.dao.delete(item);
+			Pet pet = PetDao.dao.getOne(getUserId(), getId());
+			PetDao.dao.delete(pet);
 		});
 
 		JButton button4 = new JButton("addOne");
 		button4.addActionListener((q) -> {
-			Item item = new Item(getUserId(), getId());
-			ItemDao.dao.add(item);
+			Pet pet = new Pet(getUserId(), getId());
+			PetDao.dao.save(pet);
 		});
 
 		{
@@ -106,28 +106,28 @@ public class OneToOneTest {
 
 			JButton button6 = new JButton("getOne");
 			button6.addActionListener((q) -> {
-				System.out.println(PeopleDao.dao.get(getUserId()));
+				System.out.println(GirlFriendDao.dao.get(getUserId()));
 			});
 
 			JButton button7 = new JButton("updateOne");
 			button7.addActionListener((q) -> {
-				People people = PeopleDao.dao.get(getUserId());
-				if (people != null) {
-					people.setAge(people.getAge() + 1);
-					PeopleDao.dao.update(people);
+				GirlFriend girlFriend = GirlFriendDao.dao.get(getUserId());
+				if (girlFriend != null) {
+					girlFriend.setAge(girlFriend.getAge() + 1);
+					GirlFriendDao.dao.update(girlFriend);
 				}
 			});
 
 			JButton button8 = new JButton("deleteOne");
 			button8.addActionListener((q) -> {
-				People people = PeopleDao.dao.get(getUserId());
-				PeopleDao.dao.delete(people);
+				GirlFriend girlFriend = GirlFriendDao.dao.get(getUserId());
+				GirlFriendDao.dao.delete(girlFriend);
 			});
 
 			JButton button9 = new JButton("addOne");
 			button9.addActionListener((q) -> {
-				People people = new People(getUserId());
-				PeopleDao.dao.add(people);
+				GirlFriend girlFriend = new GirlFriend(getUserId());
+				GirlFriendDao.dao.save(girlFriend);
 			});
 
 			int x = 30;
@@ -164,8 +164,8 @@ public class OneToOneTest {
 	}
 
 	public static void main(String[] args) throws Exception {
-		CglibProxyFactory.init("OneToOne.dao");
-		// new OneToOneTest().init();
+		CglibProxyFactory.init("fastcache2.dao");
+		new Test2().init();
 	}
 
 	public int getType() {

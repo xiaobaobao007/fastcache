@@ -2,6 +2,7 @@ package pers.xiaobaobao.fastcache.util;
 
 /**
  * @author bao meng yang <932824098@qq.com>
+ * @version 1.0
  * @date 2021/1/21，11:01:44
  */
 public class StringTools {

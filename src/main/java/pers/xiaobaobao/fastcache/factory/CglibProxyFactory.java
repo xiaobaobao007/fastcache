@@ -24,10 +24,11 @@ import pers.xiaobaobao.fastcache.util.ClassTools;
 import pers.xiaobaobao.fastcache.util.StringTools;
 
 /**
+ * 代理对象操作类
+ *
  * @author bao meng yang <932824098@qq.com>
+ * @version 2.0
  * @date 2021/1/18，9:50
- * <p>
- * 需要检测index是否正确
  */
 
 @SuppressWarnings("unchecked")
@@ -42,7 +43,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 	private static final Map<String, ProxyClass> proxyClassMap = new ConcurrentHashMap<>();
 
 	/**
-	 * 强烈建议对dao层所有包进行初始化加载
+	 * 强烈建议对dao层所有包先进行初始化加载！！！！！！！！！！！！！！！！！！！！！！！！！！
 	 */
 	public static void init(String packageName) {
 		LOG.debug("开始扫描【{}】包下的类缓存", packageName);
@@ -99,6 +100,9 @@ public class CglibProxyFactory implements MethodInterceptor {
 		return methodProxy.invokeSuper(o, objects);
 	}
 
+	/**
+	 * 获得dao层的单例对象
+	 */
 	public static <T> T getProxy(Class<T> daoClass) {
 		LOG.debug("开始进行类缓存:【{}】", daoClass.getName());
 		Enhancer enhancer = new Enhancer();
@@ -191,8 +195,9 @@ public class CglibProxyFactory implements MethodInterceptor {
 		return t;
 	}
 
-	//因为hashcode方法被代理，会栈溢出
+	//因为hashcode方法被代理，所以需要自己实现，否则会栈溢出
 	private static String hashCode(Object object) {
+		// return object.hashCode();
 		return ("" + System.identityHashCode(object)).intern();
 	}
 

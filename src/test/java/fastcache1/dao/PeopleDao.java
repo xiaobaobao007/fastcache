@@ -1,6 +1,6 @@
-package OneToOne.dao;
+package fastcache1.dao;
 
-import OneToOne.domain.People;
+import fastcache1.domain.People;
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
@@ -13,7 +13,7 @@ import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/16，17:41
  */
-@Cache(location = "OneToOne.domain.People", primaryKey = "userId")
+@Cache(location = "fastcache1.domain.People", primaryKey = "userId")
 public class PeopleDao implements FastCacheBaseCacheObject {
 
 	public static PeopleDao dao = CglibProxyFactory.getProxy(PeopleDao.class);

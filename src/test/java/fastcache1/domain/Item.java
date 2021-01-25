@@ -1,4 +1,4 @@
-package OneToMore.domain;
+package fastcache1.domain;
 
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 
@@ -6,12 +6,12 @@ import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/20，15:53:57
  */
-public class Pet implements FastCacheBaseCacheObject {
+public class Item implements FastCacheBaseCacheObject {
 	private int uid;
 	private int id;
 	private int num;
 
-	public Pet(int uid, int id) {
+	public Item(int uid, int id) {
 		this.uid = uid;
 		this.id = id;
 	}

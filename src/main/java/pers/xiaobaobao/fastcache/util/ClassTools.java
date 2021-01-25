@@ -7,13 +7,22 @@ import java.net.URL;
 import java.util.Enumeration;
 
 /**
- * 通过包名获取class
+ * class工具类
  *
  * @author bao meng yang <932824098@qq.com>
+ * @version 2.0
  * @date 2021/1/20，14:33
  */
 public class ClassTools {
 
+	/**
+	 * 寻找po类位置
+	 *
+	 * @param location po类地址，或者包的地址，寻找逻辑会在每个文件夹搜索
+	 * @param daoClass dao层类class
+	 * @return po类
+	 * @throws IOException 寻找不到po类
+	 */
 	public static Class<?> getDaoToPo(String location, Class<?> daoClass) throws IOException {
 		String daoToPoName = daoClass.getSimpleName();
 		if (!StringTools.isNull(daoToPoName) && daoToPoName.length() > 3) {
@@ -40,10 +49,7 @@ public class ClassTools {
 
 	private static Class<?> getClassByDeepDir(File dir, String daoToPoName, String location, ClassLoader classLoader) {
 		if (dir.exists()) {
-			if (!dir.isDirectory()) {
-				return null;
-			}
-			File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
+			File[] defiles = dir.listFiles(file -> file.isDirectory() || file.getName().endsWith(".class"));
 			if (defiles == null) {
 				return null;
 			}
@@ -58,7 +64,8 @@ public class ClassTools {
 					if (!poName.equals(daoToPoName)) {
 						continue;
 					}
-					String className = location + "." + poName;
+					String a = location.substring(location.lastIndexOf(".") + 1);
+					String className = location + file.getPath().substring(file.getPath().lastIndexOf(a) + a.length(), file.getPath().length() - 6).replace("\\", ".");
 					try {
 						return Class.forName(className, true, classLoader);
 					} catch (ClassNotFoundException e1) {
@@ -71,8 +78,11 @@ public class ClassTools {
 	}
 
 	/**
-	 * @param packageName 需要被加载的包名
+	 * @param packageName 需要被加载的dao层包名，去扫描dao层bao下所有包含annotation注解的类
 	 * @param annotation  只有指定被注解的才能被加载
+	 * @return 加载类的数量
+	 * @throws IOException            packageName找不到
+	 * @throws ClassNotFoundException class类加载不到
 	 */
 	public static int loadClass(String packageName, Class<? extends Annotation> annotation) throws IOException, ClassNotFoundException {
 		int num = 0;
@@ -80,8 +90,7 @@ public class ClassTools {
 		Enumeration<URL> dirs = classLoader.getResources(packageName.replace('.', '/'));
 		while (dirs.hasMoreElements()) {
 			URL url = dirs.nextElement();
-			String protocol = url.getProtocol();
-			if (!"file".equals(protocol)) {
+			if (!"file".equals(url.getProtocol())) {
 				continue;
 			}
 			File dir = new File(url.getFile());

@@ -1,9 +1,9 @@
-package OneToOne.dao;
+package fastcache1.dao;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import OneToOne.domain.Item;
+import fastcache1.domain.Item;
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheInitList;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
@@ -15,7 +15,7 @@ import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/16，17:41
  */
-@Cache(location = "OneToOne.domain.Item", primaryKey = "uid", secondaryKey = "id")
+@Cache(location = "fastcache1.domain.Item", primaryKey = "uid", secondaryKey = "id")
 public class ItemDao implements FastCacheBaseCacheObject {
 
 	public static ItemDao dao = CglibProxyFactory.getProxy(ItemDao.class);
@@ -26,6 +26,7 @@ public class ItemDao implements FastCacheBaseCacheObject {
 	@CacheInitList
 	@CacheOperation(isListOperation = true, operation = CacheOperationType.GET)
 	public List<Item> getList(int uid) {
+		//todo 用于模拟从数据库取得数据
 		if (uid % 2 == 0) {
 			List<Item> list = new ArrayList<>();
 			for (int i = 0; i < 3; i++) {
@@ -38,9 +39,6 @@ public class ItemDao implements FastCacheBaseCacheObject {
 
 	@CacheOperation(operation = CacheOperationType.GET)
 	public Item getOne(int uid, int id) {
-		if (uid % 2 == 0) {
-			return new Item(uid, id);
-		}
 		return null;
 	}
 

@@ -1,7 +1,7 @@
-package OneToMore.dao;
+package fastcache2.dao;
 
-import OneToMore.base.CacheBaseOneDao;
-import OneToMore.domain.GirlFriend;
+import fastcache2.base.CacheBaseOneDao;
+import fastcache2.domain.file1.GirlFriend;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
 /**
@@ -19,6 +19,7 @@ public class GirlFriendDao extends CacheBaseOneDao<GirlFriend, Integer> {
 
 	@Override
 	protected GirlFriend getOneByPKey(Integer uid) {
+		//todo 用于模拟从数据库取得数据
 		if (uid % 2 == 0) {
 			return new GirlFriend(uid);
 		}

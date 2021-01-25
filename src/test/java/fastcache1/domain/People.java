@@ -1,4 +1,4 @@
-package OneToMore.domain;
+package fastcache1.domain;
 
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 
@@ -6,12 +6,12 @@ import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
  * @author bao meng yang <932824098@qq.com>
  * @date 2021/1/20，15:50:50
  */
-public class GirlFriend implements FastCacheBaseCacheObject {
+public class People implements FastCacheBaseCacheObject {
 
 	private int userId;
 	private int age;
 
-	public GirlFriend(int userId) {
+	public People(int userId) {
 		this.userId = userId;
 	}
 
