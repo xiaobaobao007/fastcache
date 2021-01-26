@@ -202,3 +202,9 @@ public class GameService extends BaseService {
     }
 }
 ```
+问题2：如何预加载class，并在jar包里对class文件进行搜索。
+
+解决：
+```
+使用JarFile，貌似只能一个一个寻找，只有启动代价高,可以忽略;
+```

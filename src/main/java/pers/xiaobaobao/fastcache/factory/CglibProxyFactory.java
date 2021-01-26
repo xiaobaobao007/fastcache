@@ -116,7 +116,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 		Class<?> poClass = null;
 		try {
 			poClass = ClassTools.getDaoToPo(cache.location(), daoClass);
-		} catch (IOException ignored) {
+		} catch (Exception ignored) {
 		}
 		if (poClass == null) {
 			LOG.warn("【{}】无法根据【{}】匹配或者未扫描到对应PO类", daoClass.getName(), cache.location());
