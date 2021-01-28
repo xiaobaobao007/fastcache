@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,15 +46,10 @@ public class CglibProxyFactory implements MethodInterceptor {
 	/**
 	 * 强烈建议对dao层所有包先进行初始化加载！！！！！！！！！！！！！！！！！！！！！！！！！！
 	 */
-	public static void init(String packageName) {
+	public static void init(String packageName) throws IOException, ClassNotFoundException {
 		LOG.debug("开始扫描【{}】包下的类缓存", packageName);
-		int num = 0;
-		try {
-			num = ClassTools.loadClass(packageName, Cache.class);
-		} catch (IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		LOG.info("【{}】包缓存类，成功加载【{}】个类", packageName, num);
+		List<Class<?>> classList = ClassTools.loadClassByAnnotation(packageName, Cache.class);
+		LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, classList);
 	}
 
 	@Override
@@ -104,7 +100,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 	 * 获得dao层的单例对象
 	 */
 	public static <T> T getProxy(Class<T> daoClass) {
-		LOG.debug("开始进行类缓存:【{}】", daoClass.getName());
+		// LOG.debug("开始进行类缓存:【{}】", daoClass.getName());
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(daoClass);
 		enhancer.setCallback(cglibProxy);
@@ -123,7 +119,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 			return (T) enhancer.create();
 		}
 
-		LOG.debug("【{}】成功匹配到【{}】", daoClass.getName(), poClass.getName());
+		// LOG.debug("【{}】成功匹配到【{}】", daoClass.getName(), poClass.getName());
 		if (StringTools.isNull(cache.primaryKey())) {
 			LOG.warn("【{}】缓存主键设置为空", daoClass.getName());
 			throw new CacheKeyException();
@@ -190,7 +186,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 
 		if (operationMap != null) {
 			proxyClassMap.put(hashCode(t), new ProxyClass(poClass, initMethod, keyFields, operationMap));
-			LOG.debug("【{}】匹配到的方法：【{}】", daoClass.getName(), operationMap.keySet());
+			// LOG.debug("【{}】匹配到的方法：【{}】", daoClass.getName(), operationMap.keySet());
 		}
 		return t;
 	}
