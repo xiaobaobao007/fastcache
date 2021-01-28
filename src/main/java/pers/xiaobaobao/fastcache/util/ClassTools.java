@@ -105,13 +105,16 @@ public class ClassTools {
 	 * @param packageName 需要被加载的dao层包名，去扫描dao层bao下所有包含annotation注解的类
 	 * @param annotation  只有指定被注解的才能被加载
 	 * @return 加载类的数量
-	 * @throws IOException            packageName找不到
-	 * @throws ClassNotFoundException class类加载不到
 	 */
-	public static List<Class<?>> loadClassByAnnotation(String packageName, Class<? extends Annotation> annotation) throws IOException, ClassNotFoundException {
+	public static List<Class<?>> loadClassByAnnotation(String packageName, Class<? extends Annotation> annotation) {
 		List<Class<?>> classList = new ArrayList<>();
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Enumeration<URL> dirs = classLoader.getResources(packageName.replace('.', '/'));
+		Enumeration<URL> dirs;
+		try {
+			dirs = classLoader.getResources(packageName.replace('.', '/'));
+		} catch (IOException e) {
+			return classList;
+		}
 		while (dirs.hasMoreElements()) {
 			URL url = dirs.nextElement();
 			if ("file".equals(url.getProtocol())) {
@@ -131,7 +134,7 @@ public class ClassTools {
 		return classList;
 	}
 
-	private static List<Class<?>> loadClassByFile(ClassLoader classLoader, URL url, String packageName, Class<? extends Annotation> annotation) throws ClassNotFoundException {
+	private static List<Class<?>> loadClassByFile(ClassLoader classLoader, URL url, String packageName, Class<? extends Annotation> annotation) {
 		File dir = new File(url.getFile());
 		if (!dir.exists() || !dir.isDirectory()) {
 			return null;
@@ -143,17 +146,25 @@ public class ClassTools {
 		List<Class<?>> list = new ArrayList<>();
 		for (File file : defiles) {
 			String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-			if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
-				continue;
+			try {
+				if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
+					continue;
+				}
+				list.add(Class.forName(className, true, classLoader));
+			} catch (ClassNotFoundException ignored) {
 			}
-			list.add(Class.forName(className, true, classLoader));
 		}
 		return list;
 	}
 
-	private static List<Class<?>> loadClassByJarFile(ClassLoader classLoader, URL url, Class<? extends Annotation> annotation) throws ClassNotFoundException, IOException {
+	private static List<Class<?>> loadClassByJarFile(ClassLoader classLoader, URL url, Class<? extends Annotation> annotation) {
 		String[] path = url.getPath().split("!/");
-		JarFile jarFile = new JarFile(path[0].substring(5));
+		JarFile jarFile;
+		try {
+			jarFile = new JarFile(path[0].substring(5));
+		} catch (IOException e) {
+			return null;
+		}
 
 		LinkedList<JarEntry> jarEntryList = new LinkedList<>();
 		Enumeration<JarEntry> ee = jarFile.entries();
@@ -173,10 +184,13 @@ public class ClassTools {
 		for (JarEntry entry : jarEntryList) {
 			String className = entry.getName().replace('/', '.');
 			className = className.substring(0, className.length() - 6);
-			if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
-				continue;
+			try {
+				if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
+					continue;
+				}
+				list.add(Class.forName(className, true, classLoader));
+			} catch (ClassNotFoundException ignored) {
 			}
-			list.add(Class.forName(className, true, classLoader));
 		}
 		return list;
 	}

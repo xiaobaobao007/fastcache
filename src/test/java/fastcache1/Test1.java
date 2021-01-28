@@ -163,7 +163,7 @@ public class Test1 {
 
 	}
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		CglibProxyFactory.init("fastcache1.dao");
 		new Test1().init();
 	}

@@ -1,6 +1,5 @@
 package pers.xiaobaobao.fastcache.factory;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -46,7 +45,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 	/**
 	 * 强烈建议对dao层所有包先进行初始化加载！！！！！！！！！！！！！！！！！！！！！！！！！！
 	 */
-	public static void init(String packageName) throws IOException, ClassNotFoundException {
+	public static void init(String packageName) {
 		LOG.debug("开始扫描【{}】包下的类缓存", packageName);
 		List<Class<?>> classList = ClassTools.loadClassByAnnotation(packageName, Cache.class);
 		LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, classList);

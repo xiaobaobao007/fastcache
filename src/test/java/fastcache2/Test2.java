@@ -4,9 +4,9 @@ import java.awt.*;
 
 import javax.swing.*;
 
-import fastcache2.domain.file1.GirlFriend;
 import fastcache2.dao.GirlFriendDao;
 import fastcache2.dao.PetDao;
+import fastcache2.domain.file1.GirlFriend;
 import fastcache2.domain.file2.Pet;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
@@ -163,7 +163,7 @@ public class Test2 {
 
 	}
 
-	public static void main(String[] args) throws Exception {
+`	public static void main(String[] args) {
 		CglibProxyFactory.init("fastcache2.dao");
 		new Test2().init();
 	}
