@@ -55,8 +55,12 @@ public class CacheFactory {
 			if (listCache == null) {
 				boolean skip = false;
 				if (proxyClass.initMethod.getName().equals(method.getName())) {
-					LOG.debug("【{}-{}】未命中LIST缓存,类未缓存initMethod", proxyClass.beProxyClass.getSimpleName(), pKey);
-					proxyClass.setMethodProxy(methodProxy);
+					if (proxyClass.getMethodProxy() == null) {
+						LOG.debug("【{}-{}】开始缓存LIST，并缓存initMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
+						proxyClass.setMethodProxy(methodProxy);
+					} else {
+						LOG.debug("【{}-{}】开始缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
+					}
 					Object invokeResult = methodProxy.invokeSuper(o, objects);
 					if (invokeResult == null) {
 						listCache = new LinkedList<>();
@@ -66,7 +70,7 @@ public class CacheFactory {
 					}
 				} else {
 					if (proxyClass.getMethodProxy() != null) {
-						LOG.debug("【{}-{}】未命中LIST缓存,执行类initMethod", proxyClass.beProxyClass.getSimpleName(), pKey);
+						LOG.debug("【{}-{}】开始缓存LIST，执行已缓存的initMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
 						Object invokeResult = proxyClass.getMethodProxy().invokeSuper(o, objects);
 						if (invokeResult == null) {
 							listCache = new LinkedList<>();
@@ -75,7 +79,7 @@ public class CacheFactory {
 							listCache = new LinkedList<>((Collection<FastCacheBaseCacheObject>) invokeResult);
 						}
 					} else {
-						LOG.debug("【{}-{}】未命中类INIT LIST缓存", proxyClass.beProxyClass.getSimpleName(), pKey);
+						LOG.debug("【{}-{}】取one先缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
 						//noinspection unchecked
 						listCache = (Queue<FastCacheBaseCacheObject>) proxyClass.initMethod.invoke(o, objects[0]);
 						skip = true;
