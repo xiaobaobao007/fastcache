@@ -33,12 +33,12 @@ public class PetDao extends CacheBaseListDao<Pet, Integer, Integer> {
 
 	@Override
 	protected Pet getOneByPSKeys(Integer uid, Integer id) {
-		return null;
+		return new Pet(uid, id);
 	}
 
 	@Override
 	protected void updateOne(Pet pet) {
-
+		throw new NullPointerException();
 	}
 
 	@Override

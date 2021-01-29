@@ -28,7 +28,7 @@ public class GirlFriendDao extends CacheBaseOneDao<GirlFriend, Integer> {
 
 	@Override
 	protected void updateOne(GirlFriend girlFriend) {
-
+		throw new NullPointerException();
 	}
 
 	@Override

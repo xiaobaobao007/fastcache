@@ -11,16 +11,18 @@ import pers.xiaobaobao.fastcache.annotation.CacheOperation;
  * 一个简单的pojo类，用来缓存被代理的数据
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.0
+ * @version 2.1
  * @date 2021/1/21，15:11:07
  */
 public class ProxyClass {
 	//被代理类的原始类
 	public final Class<?> beProxyClass;
-	//在一对多关系下，需要去执行initMethod获得list（未被代理的方法）
-	public final Method initMethod;
-	//在一对多关系下，需要去执行initMethod获得list（被代理的方法）
-	private MethodProxy methodProxy;
+
+	//在一对多关系下，需要去执行initListMethod获得list（未被代理的方法）
+	public final Method initListMethod;
+	//在一对多关系下，需要去执行initListMethod获得list（被代理的方法）
+	private MethodProxy initListMethodProxy;
+
 	/**
 	 * 对应po类下需要进行反射的属性值，
 	 * 一对一关系下，keyFields的length=1，即只有主键的映射
@@ -30,9 +32,9 @@ public class ProxyClass {
 	//缓存dao层方法的注解
 	public final Map<String, CacheOperation> operationMap;
 
-	public ProxyClass(Class<?> beProxyClass, Method initMethod, Field[] keyFields, Map<String, CacheOperation> operationMap) {
+	public ProxyClass(Class<?> beProxyClass, Method initListMethod, Field[] keyFields, Map<String, CacheOperation> operationMap) {
 		this.beProxyClass = beProxyClass;
-		this.initMethod = initMethod;
+		this.initListMethod = initListMethod;
 		this.keyFields = keyFields;
 		this.operationMap = operationMap;
 	}
@@ -62,11 +64,12 @@ public class ProxyClass {
 		return keyFields.length == 2;
 	}
 
-	public MethodProxy getMethodProxy() {
-		return methodProxy;
+	public MethodProxy getInitListMethodProxy() {
+		return initListMethodProxy;
 	}
 
-	public void setMethodProxy(MethodProxy methodProxy) {
-		this.methodProxy = methodProxy;
+	public void setInitListMethodProxy(MethodProxy initListMethodProxy) {
+		this.initListMethodProxy = initListMethodProxy;
 	}
+
 }

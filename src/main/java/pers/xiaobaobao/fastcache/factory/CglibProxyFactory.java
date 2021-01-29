@@ -27,7 +27,7 @@ import pers.xiaobaobao.fastcache.util.StringTools;
  * 代理对象操作类
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.0
+ * @version 2.1
  * @date 2021/1/18，9:50
  */
 
@@ -53,44 +53,66 @@ public class CglibProxyFactory implements MethodInterceptor {
 
 	@Override
 	public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+		//已经完成了计算
+		boolean hadDo = false;
+		//结果
+		Object result = null;
+		//发生了错误
+		Exception resultException = null;
+
 		ProxyClass proxyClass;
 		String hashCode = hashCode(o);
 		if ((proxyClass = proxyClassMap.get(hashCode)) != null) {
 			CacheOperation cacheOperation = proxyClass.operationMap.get(method.getName());
 			if (cacheOperation != null) {
+
+				if (objects[cacheOperation.primaryKeyIndex()] == null) {
+					LOG.error("{},【{}-{}】，传入参数为空，取消执行", cacheOperation.operation().name(), proxyClass.beProxyClass.getName(), method.getName());
+					return null;
+				}
+				if (cacheOperation.operation() != CacheOperationType.GET) {
+					try {
+						//除了查找，其余操作都先执行数据库操作，
+						//为了防止数据回滚，但是已经插入缓存的错误
+						hadDo = true;
+						result = methodProxy.invokeSuper(o, objects);
+					} catch (Exception e) {
+						resultException = e;
+						if (cacheOperation.operation() != CacheOperationType.UPDATE) {
+							return null;
+						}
+					}
+				}
+
 				switch (cacheOperation.operation()) {
 					case GET: {
 						return cacheFactory.getObject(o, method, objects, methodProxy, proxyClass, hashCode, cacheOperation);
 					}
 					case UPDATE: {
-						if (objects[cacheOperation.primaryKeyIndex()] == null) {
-							LOG.error("【{}-{}】，传入参数为空，取消执行", proxyClass.beProxyClass.getName(), method.getName());
-							return null;
-						}
 						FastCacheBaseCacheObject fastCacheBaseCacheObject = (FastCacheBaseCacheObject) objects[cacheOperation.primaryKeyIndex()];
-						cacheFactory.update(fastCacheBaseCacheObject, hashCode, proxyClass.getPrimaryKeyValue(fastCacheBaseCacheObject), proxyClass, true);
+						cacheFactory.update(fastCacheBaseCacheObject, hashCode, proxyClass.getPrimaryKeyValue(fastCacheBaseCacheObject), proxyClass,
+								true, resultException != null);
+						if (resultException != null) {
+							throw resultException;
+						}
 						break;
 					}
 					case ADD: {
-						if (objects[cacheOperation.primaryKeyIndex()] == null) {
-							LOG.error("【{}-{}】，传入参数为空，取消执行", proxyClass.beProxyClass.getName(), method.getName());
-							return null;
-						}
 						FastCacheBaseCacheObject fastCacheBaseCacheObject = (FastCacheBaseCacheObject) objects[cacheOperation.primaryKeyIndex()];
 						cacheFactory.add(fastCacheBaseCacheObject, hashCode, proxyClass.getPrimaryKeyValue(fastCacheBaseCacheObject), proxyClass);
 						break;
 					}
 					case DELETE: {
-						if (objects[cacheOperation.primaryKeyIndex()] == null) {
-							LOG.error("【{}-{}】，传入参数为空，取消执行", proxyClass.beProxyClass.getName(), method.getName());
-							return null;
-						}
 						FastCacheBaseCacheObject fastCacheBaseCacheObject = (FastCacheBaseCacheObject) objects[cacheOperation.primaryKeyIndex()];
 						cacheFactory.delete(fastCacheBaseCacheObject, hashCode, proxyClass.getPrimaryKeyValue(fastCacheBaseCacheObject), proxyClass);
 						break;
 					}
 				}
 			}
+		}
+
+		if (hadDo) {
+			return result;
 		}
 		return methodProxy.invokeSuper(o, objects);
 	}
@@ -147,7 +169,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 			throw new CacheKeyException();
 		}
 
-		Method initMethod = null;
+		Method initListMethod = null;
 		Map<String, CacheOperation> operationMap = null;
 
 		T t = (T) enhancer.create();
@@ -177,14 +199,14 @@ public class CglibProxyFactory implements MethodInterceptor {
 						}
 						operationMap.put(method.getName(), cacheOperation);
 					} else if (annotation instanceof CacheInitList) {
-						initMethod = method;
+						initListMethod = method;
 					}
 				}
 			}
 		}
 
 		if (operationMap != null) {
-			proxyClassMap.put(hashCode(t), new ProxyClass(poClass, initMethod, keyFields, operationMap));
+			proxyClassMap.put(hashCode(t), new ProxyClass(poClass, initListMethod, keyFields, operationMap));
 			// LOG.debug("【{}】匹配到的方法：【{}】", daoClass.getName(), operationMap.keySet());
 		}
 		return t;

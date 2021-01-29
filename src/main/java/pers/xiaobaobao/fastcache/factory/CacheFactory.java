@@ -1,10 +1,7 @@
 package pers.xiaobaobao.fastcache.factory;
 
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.cglib.proxy.MethodProxy;
@@ -18,7 +15,7 @@ import pers.xiaobaobao.fastcache.domian.ProxyClass;
  * 缓存操作工厂
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.0
+ * @version 2.1
  * @date 2021/1/19，11:27
  */
 public class CacheFactory {
@@ -34,6 +31,9 @@ public class CacheFactory {
 	//空对象
 	private static final FastCacheBaseCacheObject NULL_CACHE_OBJECT = new FastCacheBaseCacheObject() {
 	};
+	//发生过回滚的对象，当再次获取的时候，从数据库读取
+	private static final FastCacheBaseCacheObject ERROR_CACHE_OBJECT = new FastCacheBaseCacheObject() {
+	};
 
 	/**
 	 * 取
@@ -47,17 +47,18 @@ public class CacheFactory {
 	                           CacheOperation cacheOperation) throws Throwable {
 
 		String pKey = "" + objects[cacheOperation.primaryKeyIndex()];
+		Queue<FastCacheBaseCacheObject> listCache = null;
 		if (proxyClass.isListClass()) {
 			Map<String, Queue<FastCacheBaseCacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
 
-			Queue<FastCacheBaseCacheObject> listCache = pKeyListCacheMap.get(pKey);
+			listCache = pKeyListCacheMap.get(pKey);
 
 			if (listCache == null) {
 				boolean skip = false;
-				if (proxyClass.initMethod.getName().equals(method.getName())) {
-					if (proxyClass.getMethodProxy() == null) {
-						LOG.debug("【{}-{}】开始缓存LIST，并缓存initMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
-						proxyClass.setMethodProxy(methodProxy);
+				if (proxyClass.initListMethod.getName().equals(method.getName())) {
+					if (proxyClass.getInitListMethodProxy() == null) {
+						LOG.debug("【{}-{}】开始缓存LIST，并缓存initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
+						proxyClass.setInitListMethodProxy(methodProxy);
 					} else {
 						LOG.debug("【{}-{}】开始缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
 					}
@@ -69,9 +70,9 @@ public class CacheFactory {
 						listCache = new LinkedList<>((Collection<FastCacheBaseCacheObject>) invokeResult);
 					}
 				} else {
-					if (proxyClass.getMethodProxy() != null) {
-						LOG.debug("【{}-{}】开始缓存LIST，执行已缓存的initMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
-						Object invokeResult = proxyClass.getMethodProxy().invokeSuper(o, objects);
+					if (proxyClass.getInitListMethodProxy() != null) {
+						LOG.debug("【{}-{}】开始缓存LIST，执行已缓存的initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
+						Object invokeResult = proxyClass.getInitListMethodProxy().invokeSuper(o, objects);
 						if (invokeResult == null) {
 							listCache = new LinkedList<>();
 						} else {
@@ -81,7 +82,7 @@ public class CacheFactory {
 					} else {
 						LOG.debug("【{}-{}】取one先缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
 						//noinspection unchecked
-						listCache = (Queue<FastCacheBaseCacheObject>) proxyClass.initMethod.invoke(o, objects[0]);
+						listCache = (Queue<FastCacheBaseCacheObject>) proxyClass.initListMethod.invoke(o, objects[0]);
 						skip = true;
 					}
 				}
@@ -118,7 +119,20 @@ public class CacheFactory {
 		}
 
 		FastCacheBaseCacheObject fastCacheBaseCacheObject = oneCacheMap.get(key);
-		if (!proxyClass.isListClass()) {
+		if (proxyClass.isListClass()) {
+			if (fastCacheBaseCacheObject == ERROR_CACHE_OBJECT) {
+
+				fastCacheBaseCacheObject = (FastCacheBaseCacheObject) methodProxy.invokeSuper(o, objects);
+
+				if (fastCacheBaseCacheObject == null) {
+					oneCacheMap.remove(key);
+				} else {
+					oneCacheMap.put(key, fastCacheBaseCacheObject);
+				}
+
+				Objects.requireNonNull(listCache).add(fastCacheBaseCacheObject);
+			}
+		} else {
 			if (fastCacheBaseCacheObject == null) {
 				LOG.debug("【{}-{}】未命中缓存", proxyClass.beProxyClass.getSimpleName(), key);
 				fastCacheBaseCacheObject = (FastCacheBaseCacheObject) methodProxy.invokeSuper(o, objects);
@@ -137,7 +151,8 @@ public class CacheFactory {
 	                      String hashCode,
 	                      String pKey,
 	                      ProxyClass proxyClass,
-	                      boolean isPutNotRemove) throws IllegalAccessException {
+	                      boolean isPutNotRemove,
+	                      boolean hasError) throws IllegalAccessException {
 
 		Map<String, FastCacheBaseCacheObject> oneCacheMap;
 		String key;
@@ -150,10 +165,20 @@ public class CacheFactory {
 			oneCacheMap = classOneCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
 			key = pKey;
 		}
-		if (isPutNotRemove) {
-			oneCacheMap.put(key, fastCacheBaseCacheObject);
+
+		if (hasError) {
+			if (proxyClass.isListClass()) {
+				oneCacheMap.put(key, ERROR_CACHE_OBJECT);
+				deleteInList(fastCacheBaseCacheObject, hashCode, pKey);
+			} else {
+				oneCacheMap.remove(key);
+			}
 		} else {
-			oneCacheMap.remove(key);
+			if (isPutNotRemove) {
+				oneCacheMap.put(key, fastCacheBaseCacheObject);
+			} else {
+				oneCacheMap.remove(key);
+			}
 		}
 	}
 
@@ -165,7 +190,7 @@ public class CacheFactory {
 	                   String pKey,
 	                   ProxyClass proxyClass) throws IllegalAccessException {
 
-		update(fastCacheBaseCacheObject, hashCode, pKey, proxyClass, true);
+		update(fastCacheBaseCacheObject, hashCode, pKey, proxyClass, true, false);
 
 		if (proxyClass.isListClass()) {
 			classListCacheMap
@@ -183,15 +208,21 @@ public class CacheFactory {
 	                      String pKey,
 	                      ProxyClass proxyClass) throws IllegalAccessException {
 
-		update(fastCacheBaseCacheObject, hashCode, pKey, proxyClass, false);
+		update(fastCacheBaseCacheObject, hashCode, pKey, proxyClass, false, false);
 
 		if (proxyClass.isListClass()) {
-			Map<String, Queue<FastCacheBaseCacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
-			Queue<FastCacheBaseCacheObject> fastCacheBaseCacheObjectQueue = pKeyListCacheMap.get(pKey);
+			deleteInList(fastCacheBaseCacheObject, hashCode, pKey);
+		}
+	}
 
-			if (fastCacheBaseCacheObjectQueue != null) {
-				fastCacheBaseCacheObjectQueue.remove(fastCacheBaseCacheObject);
-			}
+	private void deleteInList(FastCacheBaseCacheObject fastCacheBaseCacheObject,
+	                          String hashCode,
+	                          String pKey) {
+		Map<String, Queue<FastCacheBaseCacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
+		Queue<FastCacheBaseCacheObject> fastCacheBaseCacheObjectQueue = pKeyListCacheMap.get(pKey);
+
+		if (fastCacheBaseCacheObjectQueue != null) {
+			fastCacheBaseCacheObjectQueue.remove(fastCacheBaseCacheObject);
 		}
 	}
 
