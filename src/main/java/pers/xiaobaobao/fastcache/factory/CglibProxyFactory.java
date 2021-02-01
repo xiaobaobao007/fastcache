@@ -42,13 +42,31 @@ public class CglibProxyFactory implements MethodInterceptor {
 	//缓存的代理对象
 	private static final Map<String, ProxyClass> proxyClassMap = new ConcurrentHashMap<>();
 
+	public static void init(String packageName) {
+		init(packageName, true);
+	}
+
 	/**
 	 * 强烈建议对dao层所有包先进行初始化加载！！！！！！！！！！！！！！！！！！！！！！！！！！
+	 *
+	 * @param packageName 包名
+	 * @param detailed    是否输出详细的加载类信息
 	 */
-	public static void init(String packageName) {
+	public static void init(String packageName, boolean detailed) {
 		LOG.debug("开始扫描【{}】包下的类缓存", packageName);
 		List<Class<?>> classList = ClassTools.loadClassByAnnotation(packageName, Cache.class);
-		LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, classList);
+		if (detailed) {
+			LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, classList);
+		} else {
+			StringBuilder sb = new StringBuilder();
+			for (Class<?> cl : classList) {
+				if (sb.length() > 0) {
+					sb.append(' ');
+				}
+				sb.append(cl.getSimpleName());
+			}
+			LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, sb.toString());
+		}
 	}
 
 	@Override
