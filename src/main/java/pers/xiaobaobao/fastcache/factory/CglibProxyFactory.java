@@ -56,7 +56,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 		LOG.debug("开始扫描【{}】包下的类缓存", packageName);
 		List<Class<?>> classList = ClassTools.loadClassByAnnotation(packageName, Cache.class);
 		if (detailed) {
-			LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, classList);
+			LOG.info("【{}】包缓存类，成功加载【{}个】:【{}】", packageName, classList.size(), classList);
 		} else {
 			StringBuilder sb = new StringBuilder();
 			for (Class<?> cl : classList) {
@@ -65,7 +65,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 				}
 				sb.append(cl.getSimpleName());
 			}
-			LOG.info("【{}】包缓存类，成功加载的有【{}】", packageName, sb.toString());
+			LOG.info("【{}】包缓存类，成功加载【{}个】:【{}】", packageName, classList.size(), sb.toString());
 		}
 	}
 
