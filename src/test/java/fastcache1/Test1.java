@@ -8,6 +8,7 @@ import fastcache1.dao.ItemDao;
 import fastcache1.dao.PeopleDao;
 import fastcache1.domain.Item;
 import fastcache1.domain.People;
+import pers.xiaobaobao.fastcache.factory.CacheFactory;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
 public class Test1 {
@@ -92,7 +93,7 @@ public class Test1 {
 
 		JButton button4 = new JButton("addOne");
 		button4.addActionListener((q) -> {
-			Item item = new Item(getUserId(), getId());
+			Item item = new Item(getUserId(), (int) CacheFactory.getMaxId(Item.class, getUserId()));
 			ItemDao.dao.add(item);
 		});
 
@@ -100,8 +101,9 @@ public class Test1 {
 			/*
 			 one的测试开始
 			 */
-			JButton button5 = new JButton("");
+			JButton button5 = new JButton("getMaxId");
 			button5.addActionListener((q) -> {
+				System.out.println(CacheFactory.getMaxId(Item.class, getUserId()));
 			});
 
 			JButton button6 = new JButton("getOne");

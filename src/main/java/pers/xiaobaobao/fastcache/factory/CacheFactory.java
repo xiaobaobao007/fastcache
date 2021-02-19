@@ -1,7 +1,8 @@
 package pers.xiaobaobao.fastcache.factory;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.cglib.proxy.MethodProxy;
@@ -9,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
+import pers.xiaobaobao.fastcache.domian.CacheQueueAndMaxId;
 import pers.xiaobaobao.fastcache.domian.ProxyClass;
+import pers.xiaobaobao.fastcache.util.StringTools;
 
 /**
  * 缓存操作工厂
@@ -26,14 +29,78 @@ public class CacheFactory {
 	private static final Map<String, Map<String, FastCacheBaseCacheObject>> classOneCacheMap = new ConcurrentHashMap<>();//<class,<pKey,cache>>
 	//一对多缓存对象
 	private static final Map<String, Map<String, Map<String, FastCacheBaseCacheObject>>> classMoreCacheMap = new ConcurrentHashMap<>();//<class,<pKey,<sKey,cache>>>
-	private static final Map<String, Map<String, Queue<FastCacheBaseCacheObject>>> classListCacheMap = new ConcurrentHashMap<>();//<class,<pKey,cacheList>>
+	private static final Map<String, Map<String, CacheQueueAndMaxId>> classListCacheMap = new ConcurrentHashMap<>();//<class,<pKey,cacheList>>
 
 	//空对象
 	private static final FastCacheBaseCacheObject NULL_CACHE_OBJECT = new FastCacheBaseCacheObject() {
 	};
-	//发生过回滚的对象，当再次获取的时候，从数据库读取
-	private static final FastCacheBaseCacheObject ERROR_CACHE_OBJECT = new FastCacheBaseCacheObject() {
-	};
+
+	/**
+	 * @param clazz dao层对应的pojo类
+	 * @param key   主键值
+	 * @return 需要自己进行强转, 类型由pojo的pKey决定
+	 */
+	public static Object getMaxId(Class<?> clazz, Object key) {
+		String pKey = key.toString();
+		String hashCode = CglibProxyFactory.beProxyClassHashCode.get(clazz);
+		if (StringTools.isNull(hashCode)) {
+			LOG.error("{}未被代理", clazz.getName());
+			return -1;
+		}
+		ProxyClass proxyClass = CglibProxyFactory.proxyClassMap.get(hashCode);
+		if (proxyClass == null) {
+			LOG.error("{}被代理了，但是代理类未找到", clazz.getName());
+			return -2;
+		}
+		Map<String, CacheQueueAndMaxId> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, (k) -> new ConcurrentHashMap<>());
+		CacheQueueAndMaxId cacheQueueAndMaxId = pKeyListCacheMap.get(pKey);
+		synchronized (("MAX_ID_" + hashCode + pKey).intern()) {
+			if (cacheQueueAndMaxId == null) {
+				if ((cacheQueueAndMaxId = pKeyListCacheMap.get(pKey)) == null) {
+					try {
+						Object invokeResult = proxyClass.getInitList(key);
+						cacheQueueAndMaxId = getCacheQueueAndMaxId(pKey, hashCode, proxyClass, pKeyListCacheMap, invokeResult);
+					} catch (Exception e) {
+						LOG.error("反射出错", e);
+						return -3;
+					}
+				}
+				pKeyListCacheMap.put(pKey, cacheQueueAndMaxId);
+			}
+
+			Object maxId = cacheQueueAndMaxId.getMaxId();
+			if (maxId instanceof Integer) {
+				cacheQueueAndMaxId.setMaxId((Integer) maxId + 1);
+			} else if (maxId instanceof Long) {
+				cacheQueueAndMaxId.setMaxId((Long) maxId + 1);
+			} else if ("int".equals(proxyClass.keyFields[0].getType().getName())) {
+				cacheQueueAndMaxId.setMaxId(1);
+			} else if ("long".equals(proxyClass.keyFields[0].getType().getName())) {
+				cacheQueueAndMaxId.setMaxId(1L);
+			} else {
+				LOG.error("不支持的maxId类型：{}", maxId.getClass().getSimpleName());
+			}
+			return cacheQueueAndMaxId.getMaxId();
+		}
+	}
+
+	private static CacheQueueAndMaxId getCacheQueueAndMaxId(String pKey, String hashCode, ProxyClass proxyClass, Map<String, CacheQueueAndMaxId> pKeyListCacheMap, Object invokeResult) throws IllegalAccessException {
+		CacheQueueAndMaxId cacheQueueAndMaxId;
+		cacheQueueAndMaxId = new CacheQueueAndMaxId();
+		if (invokeResult != null) {
+			//noinspection unchecked
+			cacheQueueAndMaxId.addAndSetMaxId((Collection<FastCacheBaseCacheObject>) invokeResult, proxyClass);
+		}
+
+		Map<String, FastCacheBaseCacheObject> sKeyCacheMap = classMoreCacheMap
+				                                                     .computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
+				                                                     .computeIfAbsent(pKey, k -> new ConcurrentHashMap<>());
+		for (FastCacheBaseCacheObject object : cacheQueueAndMaxId.getQueue()) {
+			sKeyCacheMap.put(proxyClass.getSecondaryKeyValue(object), object);
+		}
+		pKeyListCacheMap.put(pKey, cacheQueueAndMaxId);
+		return cacheQueueAndMaxId;
+	}
 
 	/**
 	 * 取
@@ -47,14 +114,15 @@ public class CacheFactory {
 	                           CacheOperation cacheOperation) throws Throwable {
 
 		String pKey = "" + objects[cacheOperation.primaryKeyIndex()];
-		Queue<FastCacheBaseCacheObject> listCache = null;
+		CacheQueueAndMaxId cacheQueueAndMaxId;
 		if (proxyClass.isListClass()) {
-			Map<String, Queue<FastCacheBaseCacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
+			Map<String, CacheQueueAndMaxId> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
 
-			listCache = pKeyListCacheMap.get(pKey);
+			cacheQueueAndMaxId = pKeyListCacheMap.get(pKey);
 
-			if (listCache == null) {
-				boolean skip = false;
+			if (cacheQueueAndMaxId == null) {
+				boolean addQueue = true;
+				Object invokeResult;
 				if (proxyClass.initListMethod.getName().equals(method.getName())) {
 					if (proxyClass.getInitListMethodProxy() == null) {
 						LOG.debug("【{}-{}】开始缓存LIST，并缓存initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
@@ -62,45 +130,26 @@ public class CacheFactory {
 					} else {
 						LOG.debug("【{}-{}】开始缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
 					}
-					Object invokeResult = methodProxy.invokeSuper(o, objects);
-					if (invokeResult == null) {
-						listCache = new LinkedList<>();
-					} else {
-						//noinspection unchecked
-						listCache = new LinkedList<>((Collection<FastCacheBaseCacheObject>) invokeResult);
-					}
+					invokeResult = methodProxy.invokeSuper(o, objects);
 				} else {
 					if (proxyClass.getInitListMethodProxy() != null) {
 						LOG.debug("【{}-{}】开始缓存LIST，执行已缓存的initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
-						Object invokeResult = proxyClass.getInitListMethodProxy().invokeSuper(o, objects);
-						if (invokeResult == null) {
-							listCache = new LinkedList<>();
-						} else {
-							//noinspection unchecked
-							listCache = new LinkedList<>((Collection<FastCacheBaseCacheObject>) invokeResult);
-						}
+						invokeResult = proxyClass.getInitListMethodProxy().invokeSuper(o, objects);
 					} else {
 						LOG.debug("【{}-{}】取one先缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
-						//noinspection unchecked
-						listCache = (Queue<FastCacheBaseCacheObject>) proxyClass.initListMethod.invoke(o, objects[0]);
-						skip = true;
+						invokeResult = proxyClass.initListMethod.invoke(o, objects[0]);
+						addQueue = false;
 					}
 				}
 
-				if (!skip) {
-					Map<String, FastCacheBaseCacheObject> sKeyCacheMap = classMoreCacheMap
-							                                                     .computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
-							                                                     .computeIfAbsent(pKey, k -> new ConcurrentHashMap<>());
-					for (FastCacheBaseCacheObject object : listCache) {
-						sKeyCacheMap.put(proxyClass.getSecondaryKeyValue(object), object);
-					}
-					pKeyListCacheMap.put(pKey, listCache);
+				if (addQueue) {
+					cacheQueueAndMaxId = getCacheQueueAndMaxId(pKey, hashCode, proxyClass, pKeyListCacheMap, invokeResult);
 				}
 			}
 
-			if (cacheOperation.isListOperation()) {
+			if (cacheQueueAndMaxId != null && cacheOperation.isListOperation()) {
 				//获得list
-				return listCache;
+				return cacheQueueAndMaxId.getQueue();
 			}
 		}
 
@@ -119,20 +168,7 @@ public class CacheFactory {
 		}
 
 		FastCacheBaseCacheObject fastCacheBaseCacheObject = oneCacheMap.get(key);
-		if (proxyClass.isListClass()) {
-			if (fastCacheBaseCacheObject == ERROR_CACHE_OBJECT) {
-
-				fastCacheBaseCacheObject = (FastCacheBaseCacheObject) methodProxy.invokeSuper(o, objects);
-
-				if (fastCacheBaseCacheObject == null) {
-					oneCacheMap.remove(key);
-				} else {
-					oneCacheMap.put(key, fastCacheBaseCacheObject);
-				}
-
-				Objects.requireNonNull(listCache).add(fastCacheBaseCacheObject);
-			}
-		} else {
+		if (!proxyClass.isListClass()) {
 			if (fastCacheBaseCacheObject == null) {
 				LOG.debug("【{}-{}】未命中缓存", proxyClass.beProxyClass.getSimpleName(), key);
 				fastCacheBaseCacheObject = (FastCacheBaseCacheObject) methodProxy.invokeSuper(o, objects);
@@ -168,7 +204,7 @@ public class CacheFactory {
 
 		if (hasError) {
 			if (proxyClass.isListClass()) {
-				oneCacheMap.put(key, ERROR_CACHE_OBJECT);
+				oneCacheMap.remove(key);
 				deleteInList(fastCacheBaseCacheObject, hashCode, pKey);
 			} else {
 				oneCacheMap.remove(key);
@@ -195,8 +231,8 @@ public class CacheFactory {
 		if (proxyClass.isListClass()) {
 			classListCacheMap
 					.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>())
-					.computeIfAbsent(pKey, k -> new LinkedList<>())
-					.add(fastCacheBaseCacheObject);
+					.computeIfAbsent(pKey, k -> new CacheQueueAndMaxId())
+					.addAndSetMaxId(fastCacheBaseCacheObject, proxyClass);
 		}
 	}
 
@@ -218,11 +254,9 @@ public class CacheFactory {
 	private void deleteInList(FastCacheBaseCacheObject fastCacheBaseCacheObject,
 	                          String hashCode,
 	                          String pKey) {
-		Map<String, Queue<FastCacheBaseCacheObject>> pKeyListCacheMap = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>());
-		Queue<FastCacheBaseCacheObject> fastCacheBaseCacheObjectQueue = pKeyListCacheMap.get(pKey);
-
-		if (fastCacheBaseCacheObjectQueue != null) {
-			fastCacheBaseCacheObjectQueue.remove(fastCacheBaseCacheObject);
+		CacheQueueAndMaxId cacheQueueAndMaxId = classListCacheMap.computeIfAbsent(hashCode, k -> new ConcurrentHashMap<>()).get(pKey);
+		if (cacheQueueAndMaxId != null) {
+			cacheQueueAndMaxId.getQueue().remove(fastCacheBaseCacheObject);
 		}
 	}
 

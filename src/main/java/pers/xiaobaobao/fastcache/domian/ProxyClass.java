@@ -1,6 +1,7 @@
 package pers.xiaobaobao.fastcache.domian;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -15,9 +16,11 @@ import pers.xiaobaobao.fastcache.annotation.CacheOperation;
  * @date 2021/1/21，15:11:07
  */
 public class ProxyClass {
-	//被代理类的原始类
-	public final Class<?> beProxyClass;
 
+	//被代理的dao层对象
+	public final Object proxyClass;
+	//未被代理类的原始类
+	public final Class<?> beProxyClass;
 	//在一对多关系下，需要去执行initListMethod获得list（未被代理的方法）
 	public final Method initListMethod;
 	//在一对多关系下，需要去执行initListMethod获得list（被代理的方法）
@@ -32,7 +35,8 @@ public class ProxyClass {
 	//缓存dao层方法的注解
 	public final Map<String, CacheOperation> operationMap;
 
-	public ProxyClass(Class<?> beProxyClass, Method initListMethod, Field[] keyFields, Map<String, CacheOperation> operationMap) {
+	public ProxyClass(Object proxyClass, Class<?> beProxyClass, Method initListMethod, Field[] keyFields, Map<String, CacheOperation> operationMap) {
+		this.proxyClass = proxyClass;
 		this.beProxyClass = beProxyClass;
 		this.initListMethod = initListMethod;
 		this.keyFields = keyFields;
@@ -70,6 +74,10 @@ public class ProxyClass {
 
 	public void setInitListMethodProxy(MethodProxy initListMethodProxy) {
 		this.initListMethodProxy = initListMethodProxy;
+	}
+
+	public Object getInitList(Object key) throws InvocationTargetException, IllegalAccessException {
+		return initListMethod.invoke(proxyClass, key);
 	}
 
 }

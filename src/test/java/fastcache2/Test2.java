@@ -8,6 +8,7 @@ import fastcache2.dao.GirlFriendDao;
 import fastcache2.dao.PetDao;
 import fastcache2.domain.file1.GirlFriend;
 import fastcache2.domain.file2.Pet;
+import pers.xiaobaobao.fastcache.factory.CacheFactory;
 import pers.xiaobaobao.fastcache.factory.CglibProxyFactory;
 
 public class Test2 {
@@ -48,7 +49,7 @@ public class Test2 {
 			JLabel jLabel2 = new JLabel("userId");
 			jLabel2.setFont(new Font("宋体", Font.BOLD, 15));
 			jLabel2.setBounds(x - 50, y - 13, 200, 50);
-			userIdText = new JTextField("1");
+			userIdText = new JTextField("2");
 			userIdText.setBounds(x + 30, y, 150, 30);
 			jPanel.add(jLabel2);
 			jPanel.add(userIdText);
@@ -92,7 +93,7 @@ public class Test2 {
 
 		JButton button4 = new JButton("addOne");
 		button4.addActionListener((q) -> {
-			Pet pet = new Pet(getUserId(), getId());
+			Pet pet = new Pet(getUserId(), (int) CacheFactory.getMaxId(Pet.class, getUserId()));
 			PetDao.dao.save(pet);
 		});
 
@@ -100,8 +101,9 @@ public class Test2 {
 			/*
 			 one的测试开始
 			 */
-			JButton button5 = new JButton("");
+			JButton button5 = new JButton("getMaxId");
 			button5.addActionListener((q) -> {
+				System.out.println(CacheFactory.getMaxId(Pet.class, getUserId()));
 			});
 
 			JButton button6 = new JButton("getOne");

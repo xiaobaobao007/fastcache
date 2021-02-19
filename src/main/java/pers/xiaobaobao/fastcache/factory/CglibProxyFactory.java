@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -40,7 +39,8 @@ public class CglibProxyFactory implements MethodInterceptor {
 	private static final CacheFactory cacheFactory = new CacheFactory();
 
 	//缓存的代理对象
-	private static final Map<String, ProxyClass> proxyClassMap = new ConcurrentHashMap<>();
+	protected static final Map<String, ProxyClass> proxyClassMap = new HashMap<>();
+	protected static final Map<Class<?>, String> beProxyClassHashCode = new HashMap<>();
 
 	public static void init(String packageName) {
 		init(packageName, true);
@@ -224,8 +224,9 @@ public class CglibProxyFactory implements MethodInterceptor {
 		}
 
 		if (operationMap != null) {
-			proxyClassMap.put(hashCode(t), new ProxyClass(poClass, initListMethod, keyFields, operationMap));
-			// LOG.debug("【{}】匹配到的方法：【{}】", daoClass.getName(), operationMap.keySet());
+			String hashCode = hashCode(t);
+			proxyClassMap.put(hashCode, new ProxyClass(t, poClass, initListMethod, keyFields, operationMap));
+			beProxyClassHashCode.put(poClass, hashCode);
 		}
 		return t;
 	}
