@@ -1,5 +1,6 @@
 package fastcache2.domain.file2;
 
+import pers.xiaobaobao.fastcache.annotation.Id;
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 
 /**
@@ -7,7 +8,9 @@ import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
  * @date 2021/1/20，15:53:57
  */
 public class Pet implements FastCacheBaseCacheObject {
+
 	private int uid;
+	@Id
 	private int id;
 	private int num;
 

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import pers.xiaobaobao.fastcache.annotation.Cache;
 import pers.xiaobaobao.fastcache.annotation.CacheInitList;
 import pers.xiaobaobao.fastcache.annotation.CacheOperation;
+import pers.xiaobaobao.fastcache.annotation.Id;
 import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 import pers.xiaobaobao.fastcache.domian.CacheOperationType;
 import pers.xiaobaobao.fastcache.domian.ProxyClass;
@@ -26,8 +27,8 @@ import pers.xiaobaobao.fastcache.util.StringTools;
  * 代理对象操作类
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.1
- * @date 2021/1/18，9:50
+ * @version 2.3
+ * @date 2021/2/22，11:00
  */
 
 @SuppressWarnings("unchecked")
@@ -167,6 +168,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 		boolean isListCache = !StringTools.isNull(cache.secondaryKey());
 
 		Field[] keyFields;
+		Field idField = null;
 		if (isListCache) {
 			try {
 				keyFields = new Field[2];
@@ -174,6 +176,17 @@ public class CglibProxyFactory implements MethodInterceptor {
 				keyFields[1].setAccessible(true);
 			} catch (NoSuchFieldException e) {
 				LOG.warn("【{}】缓存副键反射不到", poClass.getName());
+				throw new CacheKeyException();
+			}
+
+			for (Field field : poClass.getDeclaredFields()) {
+				if (field.getAnnotation(Id.class) != null) {
+					idField = field;
+				}
+			}
+
+			if (idField == null) {
+				LOG.warn("【{}】id注解没有设置", poClass.getName());
 				throw new CacheKeyException();
 			}
 		} else {
@@ -225,7 +238,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 
 		if (operationMap != null) {
 			String hashCode = hashCode(t);
-			proxyClassMap.put(hashCode, new ProxyClass(t, poClass, initListMethod, keyFields, operationMap));
+			proxyClassMap.put(hashCode, new ProxyClass(t, poClass, initListMethod, keyFields, operationMap, idField));
 			beProxyClassHashCode.put(poClass, hashCode);
 		}
 		return t;

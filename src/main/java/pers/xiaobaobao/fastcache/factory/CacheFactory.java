@@ -18,8 +18,8 @@ import pers.xiaobaobao.fastcache.util.StringTools;
  * 缓存操作工厂
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.1
- * @date 2021/1/19，11:27
+ * @version 2.3
+ * @date 2021/2/22，11:00
  */
 public class CacheFactory {
 
@@ -40,7 +40,7 @@ public class CacheFactory {
 	 * @param key   主键值
 	 * @return 需要自己进行强转, 类型由pojo的pKey决定
 	 */
-	public static Object getMaxId(Class<?> clazz, Object key) {
+	public static long getMaxId(Class<?> clazz, Object key) {
 		String pKey = key.toString();
 		String hashCode = CglibProxyFactory.beProxyClassHashCode.get(clazz);
 		if (StringTools.isNull(hashCode)) {
@@ -68,20 +68,10 @@ public class CacheFactory {
 				pKeyListCacheMap.put(pKey, cacheQueueAndMaxId);
 			}
 
-			Object maxId = cacheQueueAndMaxId.getMaxId();
-			if (maxId instanceof Integer) {
-				cacheQueueAndMaxId.setMaxId((Integer) maxId + 1);
-			} else if (maxId instanceof Long) {
-				cacheQueueAndMaxId.setMaxId((Long) maxId + 1);
-			} else if ("int".equals(proxyClass.keyFields[1].getType().getName())) {
-				cacheQueueAndMaxId.setMaxId(1);
-			} else if ("long".equals(proxyClass.keyFields[1].getType().getName())) {
-				cacheQueueAndMaxId.setMaxId(1L);
-			} else {
-				LOG.error("不支持的maxId类型：{}", maxId.getClass().getSimpleName());
-			}
-			return cacheQueueAndMaxId.getMaxId();
+			long maxId = cacheQueueAndMaxId.getMaxId();
+			cacheQueueAndMaxId.setMaxId(maxId + 1);
 		}
+		return cacheQueueAndMaxId.getMaxId();
 	}
 
 	private static CacheQueueAndMaxId getCacheQueueAndMaxId(String pKey, String hashCode, ProxyClass proxyClass, Map<String, CacheQueueAndMaxId> pKeyListCacheMap, Object invokeResult) throws IllegalAccessException {

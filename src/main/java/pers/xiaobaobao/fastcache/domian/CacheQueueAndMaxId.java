@@ -10,39 +10,30 @@ import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
  * 用来记录当前最大的id
  *
  * @author bao meng yang <932824098@qq.com>
- * @date 2021/2/19，9:48:53
+ * @version 2.3
+ * @date 2021/2/22，11:00
  */
 public class CacheQueueAndMaxId {
 
 	private final Queue<FastCacheBaseCacheObject> queue = new LinkedList<>();
-	private Object maxId;
+	private long maxId = 0;
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	public void addAndSetMaxId(Collection<FastCacheBaseCacheObject> collection, ProxyClass proxyClass) {
 		if (collection == null || collection.isEmpty()) {
 			return;
 		}
 		for (FastCacheBaseCacheObject object : collection) {
-			try {
-				Comparable id = (Comparable) proxyClass.keyFields[1].get(object);
-				if (maxId == null || id.compareTo(maxId) > 0) {
-					maxId = id;
-				}
-				queue.add(object);
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-			}
+			addAndSetMaxId(object, proxyClass);
 		}
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	public void addAndSetMaxId(FastCacheBaseCacheObject object, ProxyClass proxyClass) {
 		if (object == null) {
 			return;
 		}
 		try {
-			Comparable id = (Comparable) proxyClass.keyFields[1].get(object);
-			if (id.compareTo(maxId) > 0) {
+			long id = (long) proxyClass.idField.get(object);
+			if (id > maxId) {
 				maxId = id;
 			}
 			queue.add(object);
@@ -55,11 +46,11 @@ public class CacheQueueAndMaxId {
 		return queue;
 	}
 
-	public Object getMaxId() {
+	public long getMaxId() {
 		return maxId;
 	}
 
-	public void setMaxId(Object maxId) {
+	public void setMaxId(long maxId) {
 		this.maxId = maxId;
 	}
 }

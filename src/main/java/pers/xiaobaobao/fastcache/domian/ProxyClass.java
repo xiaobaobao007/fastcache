@@ -12,8 +12,8 @@ import pers.xiaobaobao.fastcache.annotation.CacheOperation;
  * 一个简单的pojo类，用来缓存被代理的数据
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.1
- * @date 2021/1/21，15:11:07
+ * @version 2.3
+ * @date 2021/2/22，11:00
  */
 public class ProxyClass {
 
@@ -32,15 +32,17 @@ public class ProxyClass {
 	 * 一对多关系下，keyFields的length=2，0是主键的映射，1是副键的映射
 	 */
 	public final Field[] keyFields;
+	public Field idField;
 	//缓存dao层方法的注解
 	public final Map<String, CacheOperation> operationMap;
 
-	public ProxyClass(Object proxyClass, Class<?> beProxyClass, Method initListMethod, Field[] keyFields, Map<String, CacheOperation> operationMap) {
+	public ProxyClass(Object proxyClass, Class<?> beProxyClass, Method initListMethod, Field[] keyFields, Map<String, CacheOperation> operationMap, Field idField) {
 		this.proxyClass = proxyClass;
 		this.beProxyClass = beProxyClass;
 		this.initListMethod = initListMethod;
 		this.keyFields = keyFields;
 		this.operationMap = operationMap;
+		this.idField = idField;
 	}
 
 	/**
