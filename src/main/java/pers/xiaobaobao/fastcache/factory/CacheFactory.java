@@ -73,9 +73,9 @@ public class CacheFactory {
 				cacheQueueAndMaxId.setMaxId((Integer) maxId + 1);
 			} else if (maxId instanceof Long) {
 				cacheQueueAndMaxId.setMaxId((Long) maxId + 1);
-			} else if ("int".equals(proxyClass.keyFields[0].getType().getName())) {
+			} else if ("int".equals(proxyClass.keyFields[1].getType().getName())) {
 				cacheQueueAndMaxId.setMaxId(1);
-			} else if ("long".equals(proxyClass.keyFields[0].getType().getName())) {
+			} else if ("long".equals(proxyClass.keyFields[1].getType().getName())) {
 				cacheQueueAndMaxId.setMaxId(1L);
 			} else {
 				LOG.error("不支持的maxId类型：{}", maxId.getClass().getSimpleName());
