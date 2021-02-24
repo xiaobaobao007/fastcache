@@ -32,9 +32,11 @@ public class CacheQueueAndMaxId {
 			return;
 		}
 		try {
-			long id = (long) proxyClass.idField.get(object);
-			if (id > maxId) {
-				maxId = id;
+			if (proxyClass.idField != null) {
+				long id = (long) proxyClass.idField.get(object);
+				if (id > maxId) {
+					maxId = id;
+				}
 			}
 			queue.add(object);
 		} catch (IllegalAccessException e) {
