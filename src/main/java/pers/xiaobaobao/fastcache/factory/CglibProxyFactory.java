@@ -182,6 +182,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 			for (Field field : poClass.getDeclaredFields()) {
 				if (field.getAnnotation(Id.class) != null) {
 					idField = field;
+					idField.setAccessible(true);
 				}
 			}
 
