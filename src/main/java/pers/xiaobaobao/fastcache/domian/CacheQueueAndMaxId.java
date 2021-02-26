@@ -16,7 +16,7 @@ import pers.xiaobaobao.fastcache.base.FastCacheBaseCacheObject;
 public class CacheQueueAndMaxId {
 
 	private final Queue<FastCacheBaseCacheObject> queue = new LinkedList<>();
-	private long maxId = 0;
+	private long maxId = 1L;
 
 	public void addAndSetMaxId(Collection<FastCacheBaseCacheObject> collection, ProxyClass proxyClass) {
 		if (collection == null || collection.isEmpty()) {
