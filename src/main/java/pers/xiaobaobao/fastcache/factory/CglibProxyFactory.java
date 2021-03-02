@@ -187,7 +187,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 			}
 
 			if (idField != null) {
-				LOG.info("【{}】配置id标签域【{}】", poClass.getName(), idField.getName());
+				LOG.debug("【{}】配置id标签域【{}】", poClass.getName(), idField.getName());
 			}
 		} else {
 			keyFields = new Field[1];
