@@ -66,7 +66,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 				}
 				sb.append(cl.getSimpleName());
 			}
-			LOG.info("【{}】包缓存类，成功加载【{}个】:【{}】", packageName, classList.size(), sb.toString());
+			LOG.debug("【{}】包缓存类，成功加载【{}个】:【{}】", packageName, classList.size(), sb.toString());
 		}
 	}
 
@@ -96,7 +96,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 						hadDo = true;
 						result = methodProxy.invokeSuper(o, objects);
 					} catch (Exception e) {
-						LOG.error("fastcache出现错误",e);
+						LOG.error("fastcache出现错误", e);
 						resultException = e;
 						if (cacheOperation.operation() != CacheOperationType.UPDATE) {
 							return null;
