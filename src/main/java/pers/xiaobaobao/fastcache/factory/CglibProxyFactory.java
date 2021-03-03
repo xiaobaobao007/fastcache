@@ -96,6 +96,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 						hadDo = true;
 						result = methodProxy.invokeSuper(o, objects);
 					} catch (Exception e) {
+						LOG.error("fastcache出现错误",e);
 						resultException = e;
 						if (cacheOperation.operation() != CacheOperationType.UPDATE) {
 							return null;
