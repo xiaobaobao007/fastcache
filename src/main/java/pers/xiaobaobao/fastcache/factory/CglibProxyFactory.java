@@ -232,6 +232,7 @@ public class CglibProxyFactory implements MethodInterceptor {
 						operationMap.put(method.getName(), cacheOperation);
 					} else if (annotation instanceof CacheInitList) {
 						initListMethod = method;
+						initListMethod.setAccessible(true);
 					}
 				}
 			}
