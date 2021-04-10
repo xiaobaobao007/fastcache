@@ -1,6 +1,9 @@
 # FastCache.
 
 ## 1、更新日志
+### 版本2.4:
+_更新时间：2021年4月10日 16点18分_
+* 解决缓存击穿问题，通过并发类的hashcode和主键拼凑成的静态池对象
 ### 版本2.3:
 _更新时间：2021年2月22日 11点44分_
 * 一对多关系下的id通过注解进行标识。
@@ -204,7 +207,7 @@ protected void updateOne(Pet pet) {
 * 2.0版本下dao层实现的方法和实际在业务层调取的方法并不一样，对应如下：
 * 根路径不支持中文
 * dao层取出的list不能直接对其操作，因为取到的就是缓存的list，要极其小心，最好只做查找，其余操作请自己把握
-* [Id](src/main/java/pers/xiaobaobao/fastcache/annotation/Id.java)注解，在一对多的关系下，必须设置。
+* [Id](src/main/java/pers/xiaobaobao/fastcache/annotation/Id.java)注解，在一对多的关系下，必须设置，并且只能在long型上使用。
 * 会自动检测是否有规范性，避免运行中出现错误。
 * 取出的对象集合一定不为空，所以可以跳过判空，直接进行操作
 

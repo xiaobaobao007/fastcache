@@ -111,29 +111,35 @@ public class CacheFactory {
 			cacheQueueAndMaxId = pKeyListCacheMap.get(pKey);
 
 			if (cacheQueueAndMaxId == null) {
-				boolean addQueue = true;
-				Object invokeResult;
-				if (proxyClass.initListMethod.getName().equals(method.getName())) {
-					if (proxyClass.getInitListMethodProxy() == null) {
-						LOG.debug("【{}-{}】开始缓存LIST，并缓存initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
-						proxyClass.setInitListMethodProxy(methodProxy);
-					} else {
-						LOG.debug("【{}-{}】开始缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
-					}
-					invokeResult = methodProxy.invokeSuper(o, objects);
-				} else {
-					if (proxyClass.getInitListMethodProxy() != null) {
-						LOG.debug("【{}-{}】开始缓存LIST，执行已缓存的initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
-						invokeResult = proxyClass.getInitListMethodProxy().invokeSuper(o, objects);
-					} else {
-						LOG.debug("【{}-{}】取one先缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
-						invokeResult = proxyClass.initListMethod.invoke(o, objects[0]);
-						addQueue = false;
-					}
-				}
+				//解决缓存击穿
+				synchronized ((proxyClass.hashCode() + pKey).intern()) {
+					cacheQueueAndMaxId = pKeyListCacheMap.get(pKey);
+					if (cacheQueueAndMaxId == null) {
+						boolean addQueue = true;
+						Object invokeResult;
+						if (proxyClass.initListMethod.getName().equals(method.getName())) {
+							if (proxyClass.getInitListMethodProxy() == null) {
+								LOG.debug("【{}-{}】开始缓存LIST，并缓存initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
+								proxyClass.setInitListMethodProxy(methodProxy);
+							} else {
+								LOG.debug("【{}-{}】开始缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
+							}
+							invokeResult = methodProxy.invokeSuper(o, objects);
+						} else {
+							if (proxyClass.getInitListMethodProxy() != null) {
+								LOG.debug("【{}-{}】开始缓存LIST，执行已缓存的initListMethod方法", proxyClass.beProxyClass.getSimpleName(), pKey);
+								invokeResult = proxyClass.getInitListMethodProxy().invokeSuper(o, objects);
+							} else {
+								LOG.debug("【{}-{}】取one先缓存LIST", proxyClass.beProxyClass.getSimpleName(), pKey);
+								invokeResult = proxyClass.initListMethod.invoke(o, objects[0]);
+								addQueue = false;
+							}
+						}
 
-				if (addQueue) {
-					cacheQueueAndMaxId = getCacheQueueAndMaxId(pKey, hashCode, proxyClass, pKeyListCacheMap, invokeResult);
+						if (addQueue) {
+							cacheQueueAndMaxId = getCacheQueueAndMaxId(pKey, hashCode, proxyClass, pKeyListCacheMap, invokeResult);
+						}
+					}
 				}
 			}
 
@@ -160,9 +166,15 @@ public class CacheFactory {
 		FastCacheBaseCacheObject fastCacheBaseCacheObject = oneCacheMap.get(key);
 		if (!proxyClass.isListClass()) {
 			if (fastCacheBaseCacheObject == null) {
-				LOG.debug("【{}-{}】未命中缓存", proxyClass.beProxyClass.getSimpleName(), key);
-				fastCacheBaseCacheObject = (FastCacheBaseCacheObject) methodProxy.invokeSuper(o, objects);
-				oneCacheMap.put(key, fastCacheBaseCacheObject == null ? NULL_CACHE_OBJECT : fastCacheBaseCacheObject);
+				//解决缓存击穿
+				synchronized ((proxyClass.hashCode() + pKey).intern()) {
+					fastCacheBaseCacheObject = oneCacheMap.get(key);
+					if (fastCacheBaseCacheObject == null) {
+						LOG.debug("【{}-{}】未命中缓存", proxyClass.beProxyClass.getSimpleName(), key);
+						fastCacheBaseCacheObject = (FastCacheBaseCacheObject) methodProxy.invokeSuper(o, objects);
+						oneCacheMap.put(key, fastCacheBaseCacheObject == null ? NULL_CACHE_OBJECT : fastCacheBaseCacheObject);
+					}
+				}
 			} else if (fastCacheBaseCacheObject == NULL_CACHE_OBJECT) {
 				return null;
 			}

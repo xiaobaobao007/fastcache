@@ -20,6 +20,7 @@ public class GirlFriendDao extends CacheBaseOneDao<GirlFriend, Integer> {
 	@Override
 	protected GirlFriend getOneByPKey(Integer uid) {
 		//todo 用于模拟从数据库取得数据
+		System.out.println("加载one");
 		if (uid % 2 == 0) {
 			return new GirlFriend(uid);
 		}

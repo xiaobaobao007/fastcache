@@ -11,7 +11,7 @@ public class Pet implements FastCacheBaseCacheObject {
 
 	private int uid;
 	@Id
-	private int id;
+	private long id;
 	private int num;
 
 	public Pet(int uid, int id) {
@@ -27,11 +27,11 @@ public class Pet implements FastCacheBaseCacheObject {
 		this.uid = uid;
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 

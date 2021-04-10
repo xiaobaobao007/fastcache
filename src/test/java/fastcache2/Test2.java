@@ -68,7 +68,11 @@ public class Test2 {
 		 */
 		JButton button = new JButton("getList");
 		button.addActionListener((q) -> {
-			System.out.println(PetDao.dao.getList(getUserId()));
+			for (int i = 0; i < 10; i++) {
+				new Thread(() -> {
+					System.out.println(PetDao.dao.getList(getUserId()));
+				}).start();
+			}
 		});
 
 		JButton button1 = new JButton("getOne");
@@ -108,7 +112,11 @@ public class Test2 {
 
 			JButton button6 = new JButton("getOne");
 			button6.addActionListener((q) -> {
-				System.out.println(GirlFriendDao.dao.get(getUserId()));
+				for (int i = 0; i < 10; i++) {
+					new Thread(() -> {
+						System.out.println(GirlFriendDao.dao.get(getUserId()));
+					}).start();
+				}
 			});
 
 			JButton button7 = new JButton("updateOne");

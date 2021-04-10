@@ -20,6 +20,7 @@ public class PetDao extends CacheBaseListDao<Pet, Integer, Integer> {
 
 	@Override
 	protected List<Pet> getListByPKeys(Integer uid) {
+		System.out.println("加载list");
 		//todo 用于模拟从数据库取得数据
 		if (uid % 2 == 0) {
 			List<Pet> list = new ArrayList<>();
