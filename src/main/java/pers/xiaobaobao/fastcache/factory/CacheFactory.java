@@ -18,7 +18,7 @@ import pers.xiaobaobao.fastcache.util.StringTools;
  * 缓存操作工厂
  *
  * @author bao meng yang <932824098@qq.com>
- * @version 2.3
+ * @version 2.4
  * @date 2021/2/22，11:00
  */
 public class CacheFactory {
