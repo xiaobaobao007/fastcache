@@ -84,7 +84,7 @@ public class ClassTools {
 		String[] path = url.getPath().split("!/");
 		JarFile jarFile = new JarFile(path[0].substring(5));
 
-		String className = daoToPoName + ".class";
+		String className = "/" + daoToPoName + ".class";
 
 		Enumeration<JarEntry> ee = jarFile.entries();
 		while (ee.hasMoreElements()) {
