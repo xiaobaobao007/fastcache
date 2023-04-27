@@ -40,7 +40,7 @@ public class ClassTools {
 		try {
 			return classLoader.loadClass(location);
 		} catch (ClassNotFoundException e) {
-			Enumeration<URL> dirs = classLoader.getResources(location.replace('.', '/'));
+			Enumeration<URL> dirs = classLoader.getResources(location.replace(".", File.separator));
 			while (dirs.hasMoreElements()) {
 				URL url = dirs.nextElement();
 				String protocol = url.getProtocol();
@@ -90,7 +90,7 @@ public class ClassTools {
 		while (ee.hasMoreElements()) {
 			JarEntry entry = ee.nextElement();
 			if (entry.getName().startsWith(path[1]) && entry.getName().endsWith(className)) {
-				className = entry.getName().replace('/', '.');
+				className = entry.getName().replace(File.separator, ".");
 				className = className.substring(0, className.length() - 6);
 				return Class.forName(className, true, classLoader);
 			}
@@ -111,7 +111,7 @@ public class ClassTools {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		Enumeration<URL> dirs;
 		try {
-			dirs = classLoader.getResources(packageName.replace('.', '/'));
+			dirs = classLoader.getResources(packageName.replace(".", File.separator));
 		} catch (IOException e) {
 			return classList;
 		}
@@ -182,7 +182,7 @@ public class ClassTools {
 
 		List<Class<?>> list = new ArrayList<>();
 		for (JarEntry entry : jarEntryList) {
-			String className = entry.getName().replace('/', '.');
+			String className = entry.getName().replace(File.separator, ".");
 			className = className.substring(0, className.length() - 6);
 			try {
 				if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
