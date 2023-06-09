@@ -139,8 +139,9 @@ public class ClassTools {
 		if (!dir.exists() || !dir.isDirectory()) {
 			return null;
 		}
-		File[] defiles = dir.listFiles(file -> !file.isDirectory() && file.getName().endsWith(".class"));
-		if (defiles == null) {
+		List<File> defiles = new ArrayList<>();
+		getAllFile(dir, defiles);
+		if (defiles.isEmpty()) {
 			return null;
 		}
 		List<Class<?>> list = new ArrayList<>();
@@ -155,6 +156,23 @@ public class ClassTools {
 			}
 		}
 		return list;
+	}
+
+	private static void getAllFile(File file, List<File> fileList) {
+		if (!file.exists()) {
+			return;
+		}
+
+		if (file.isDirectory()) {
+			File[] files = file.listFiles();
+			if (files != null && files.length > 0) {
+				for (File a : files) {
+					getAllFile(a, fileList);
+				}
+			}
+		} else if (file.getName().endsWith(".class")) {
+			fileList.add(file);
+		}
 	}
 
 	private static List<Class<?>> loadClassByJarFile(ClassLoader classLoader, URL url, Class<? extends Annotation> annotation) {
