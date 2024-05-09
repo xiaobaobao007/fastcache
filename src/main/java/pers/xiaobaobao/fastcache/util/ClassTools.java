@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -135,43 +136,39 @@ public class ClassTools {
 	}
 
 	private static List<Class<?>> loadClassByFile(ClassLoader classLoader, URL url, String packageName, Class<? extends Annotation> annotation) {
-		File dir = new File(url.getFile());
-		if (!dir.exists() || !dir.isDirectory()) {
-			return null;
-		}
-		List<File> defiles = new ArrayList<>();
-		getAllFile(dir, defiles);
-		if (defiles.isEmpty()) {
-			return null;
-		}
-		List<Class<?>> list = new ArrayList<>();
-		for (File file : defiles) {
-			String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-			try {
-				if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
-					continue;
-				}
-				list.add(Class.forName(className, true, classLoader));
-			} catch (ClassNotFoundException ignored) {
-			}
-		}
-		return list;
+		String filePath = URLDecoder.decode(url.getFile());
+		File dir = new File(filePath);
+		List<Class<?>> classList = new ArrayList<>();
+		loadClassByFile(classLoader, dir, packageName, annotation, classList);
+		return classList;
 	}
 
-	private static void getAllFile(File file, List<File> fileList) {
-		if (!file.exists()) {
+	private static void loadClassByFile(ClassLoader classLoader, File dir, String packageName, Class<? extends Annotation> annotation, List<Class<?>> classList) {
+		if (!dir.exists()) {
 			return;
 		}
 
-		if (file.isDirectory()) {
-			File[] files = file.listFiles();
-			if (files != null && files.length > 0) {
-				for (File a : files) {
-					getAllFile(a, fileList);
-				}
+		if (dir.isDirectory()) {
+			File[] files = dir.listFiles();
+			if (files == null) {
+				return;
 			}
-		} else if (file.getName().endsWith(".class")) {
-			fileList.add(file);
+			for (File file : files) {
+				if (!packageName.endsWith("." + dir.getName())) {
+					packageName += "." + dir.getName();
+				}
+				loadClassByFile(classLoader, file, packageName, annotation, classList);
+			}
+		} else if (dir.getName().endsWith(".class")) {
+			String className = packageName + '.' + dir.getName().substring(0, dir.getName().length() - 6);
+			try {
+				if (classLoader.loadClass(className).getAnnotation(annotation) == null) {
+					return;
+				}
+				classList.add(Class.forName(className, true, classLoader));
+			} catch (ClassNotFoundException ignored) {
+				ignored.printStackTrace();
+			}
 		}
 	}
 
